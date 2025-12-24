@@ -10,6 +10,7 @@ import com.usis.project.repositories.CourseRepository;
 import com.usis.project.repositories.LecturerRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.util.ObjectUtils;
 
 import java.util.List;
 import java.util.Objects;
@@ -71,11 +72,15 @@ public class AdminService {
         courseRepository.save(course);
     }
 
-    public void deleteCourse(String courseId) {
-        if (!courseRepository.existsById(courseId)) {
-            throw new RuntimeException("Course not found");
+    public void deleteCourse(String courseId,String lecturerId) {
+        Course course = courseRepository.findById(courseId).orElseThrow(() -> new RuntimeException("Course ID not found"));
+        if (!course.getLecturer().getLecturerId().equals(lecturerId)) {
+            throw new RuntimeException("You cannot delete other lecturer class");
         }
-        List<CourseRegistration> courseRegistrationList = registrationRepository.findAllByCourseId(courseId);
+
+        List<CourseRegistration> courseRegistrationList = registrationRepository.findAllByCourseId(courseId)
+                                                            .stream()
+                                                            .filter(courseRegistration -> "Approved".equals(courseRegistration.getRegistrationStatus())).toList();
         if (courseRegistrationList.isEmpty()) {
             courseRepository.deleteById(courseId);
         } else {
@@ -88,10 +93,21 @@ public class AdminService {
                 .map(reg -> {
                     CourseRegistrationResponse res = new CourseRegistrationResponse();
                     res.setRegistrationId(reg.getRegistrationId());
-                    res.setStudentId(res.getStudentId());
-                    res.setStudentName(res.getStudentName());
-                    res.setCourseId(res.getCourseId());
-                    res.setCourseName(res.getCourseName());
+                    Student student = reg.getStudent();
+                    Course course = reg.getCourse();
+
+                    if(ObjectUtils.isEmpty(student)) {
+                        throw new RuntimeException("Student not found");
+                    }
+
+                    if(ObjectUtils.isEmpty(course)) {
+                        throw new RuntimeException("Course not found");
+                    }
+
+                    res.setStudentId(student.getStudentId());
+                    res.setStudentName(student.getName());
+                    res.setCourseId(course.getCourseId());
+                    res.setCourseName(course.getCourseName());
                     res.setStatus(reg.getRegistrationStatus());
                     return res;
                 })
@@ -110,6 +126,7 @@ public class AdminService {
                     res.setAddress(student.getAddress());
                     res.setPhoneNumber(student.getPhoneNumber());
                     res.setRegistrationId(reg.getRegistrationId());
+                    res.setGpa(reg.getSubjectGpa());
                     return res;
                 })
                 .toList();
