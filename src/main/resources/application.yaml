@@ -1,0 +1,18 @@
+spring:
+  datasource:
+    url: jdbc:sqlserver://192.168.3.237:1433;databaseName=<YOUR_DB_NAME>;encrypt=true;trustServerCertificate=true;
+
+    username:
+    password: <YOUR_STRONG_PASSWORD>
+
+    driver-class-name: com.microsoft.sqlserver.jdbc.SQLServerDriver
+
+  jpa:
+    show-sql: true
+
+    hibernate:
+      ddl-auto: update
+
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.SQLServer2016Dialect
