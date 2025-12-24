@@ -1,5 +1,6 @@
 package com.usis.project.services;
 
+import com.usis.project.entities.Lecturer;
 import com.usis.project.models.CourseResponse;
 import com.usis.project.repositories.CourseRepository;
 import lombok.RequiredArgsConstructor;
@@ -19,6 +20,11 @@ public class CourseService {
             res.setCourseId(course.getCourseId());
             res.setCourseName(course.getCourseName());
             res.setCreditHours(course.getCreditHours());
+            Lecturer lecturer = course.getLecturer();
+            if(lecturer != null) {
+                res.setLecturerName(lecturer.getName());
+                res.setLecturerEmail(lecturer.getEmail());
+            }
             return res;
         }).collect(Collectors.toList());
     }

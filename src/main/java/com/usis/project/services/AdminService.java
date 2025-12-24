@@ -2,20 +2,24 @@ package com.usis.project.services;
 
 import com.usis.project.entities.Course;
 import com.usis.project.entities.CourseRegistration;
+import com.usis.project.entities.Lecturer;
 import com.usis.project.entities.Student;
 import com.usis.project.models.*;
 import com.usis.project.repositories.CourseRegistrationRepository;
 import com.usis.project.repositories.CourseRepository;
+import com.usis.project.repositories.LecturerRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
 public class AdminService {
     private final CourseRegistrationRepository registrationRepository;
     private final CourseRepository courseRepository;
+    private final LecturerRepository lecturerRepository;
 
     public void updateGrade(UpdateGradeRequest request) {
         CourseRegistration registration = registrationRepository.findById(request.getRegistrationId())
@@ -50,14 +54,20 @@ public class AdminService {
         registrationRepository.save(registration);
     }
 
-    public void addCourse(CourseRequest request) {
+    public void addCourse(CourseRequest request, String lecturerId) {
         if (courseRepository.existsById(request.getCourseId())) {
             throw new RuntimeException("Course ID already exists");
         }
+        Lecturer lecturer = lecturerRepository.findByLecturerId(lecturerId);
+        if(Objects.isNull(lecturer)) {
+            throw new RuntimeException("Lecturer with id " + lecturerId + " not found");
+        }
+
         Course course = new Course();
         course.setCourseId(request.getCourseId());
         course.setCourseName(request.getCourseName());
         course.setCreditHours(request.getCreditHours());
+        course.setLecturer(lecturer);
         courseRepository.save(course);
     }
 

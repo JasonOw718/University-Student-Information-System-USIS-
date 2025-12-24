@@ -1,6 +1,7 @@
 package com.usis.project.controllers;
 
 import com.usis.project.models.*;
+import com.usis.project.security.AuthUtil;
 import com.usis.project.services.AdminService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -13,6 +14,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class AdminController {
     private final AdminService adminService;
+    private final AuthUtil authUtil;
 
     @PutMapping("/grades")
     public ResponseEntity<MessageResponse> updateGrade(@RequestBody UpdateGradeRequest request) {
@@ -29,7 +31,8 @@ public class AdminController {
 
     @PostMapping("/courses")
     public ResponseEntity<MessageResponse> addCourse(@RequestBody CourseRequest request) {
-        adminService.addCourse(request);
+        String lecturerId =  authUtil.getAuthenticatedLecturerId();
+        adminService.addCourse(request,lecturerId);
         return ResponseEntity.ok(new MessageResponse("Course added successfully"));
     }
 

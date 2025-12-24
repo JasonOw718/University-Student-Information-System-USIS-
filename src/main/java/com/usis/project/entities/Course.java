@@ -16,4 +16,8 @@ public class Course {
 
     @Column(name = "CreditHours", nullable = false)
     private Integer creditHours;
+
+    @ManyToOne
+    @JoinColumn(name = "LecturerID")
+    private Lecturer lecturer;
 }

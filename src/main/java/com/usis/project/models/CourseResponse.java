@@ -7,4 +7,6 @@ public class CourseResponse {
     private String courseId;
     private String courseName;
     private Integer creditHours;
+    private String lecturerName;
+    private String lecturerEmail;
 }

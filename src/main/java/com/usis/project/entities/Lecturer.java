@@ -19,4 +19,5 @@ public class Lecturer {
 
     @Column(name = "Password", length = 255, nullable = false)
     private String password;
+
 }
