@@ -202,4 +202,5 @@ You can explore and test the API endpoints (Signup, Login, Course Registration, 
 
 **[View Postman Collection](https://www.google.com/search?q=https://postman.co/workspace/My-Workspace~d1e40ac2-fc42-44c0-888f-824a511c163b/request/37119317-359edb16-8d0a-4afa-a0ce-f9a44d7df900%3Faction%3Dshare%26creator%3D37119317%26ctx%3Ddocumentation)**
 
-```
+## UI MOCKUP
+**[UI MOCKUP](https://JasonOw718.github.io/USIS_MOCKUP/)**
