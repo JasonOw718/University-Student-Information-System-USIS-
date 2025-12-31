@@ -31,3 +31,7 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### Codex agent notes / planning docs ###
+AGENTS.md
+plannedfrontend.md

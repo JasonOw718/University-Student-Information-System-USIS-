@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>USIS Frontend</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <main class="page">
+      <section class="card">
+        <header class="card__header">
+          <p class="badge">USIS</p>
+          <h1>Student Information System</h1>
+          <p class="muted">Sign in or create an account to continue.</p>
+        </header>
+
+        <div class="tabs">
+          <button class="tab is-active" data-tab="login" type="button">Login</button>
+          <button class="tab" data-tab="register" type="button">Register</button>
+        </div>
+
+        <div class="role">
+          <label class="role__label">Role</label>
+          <div class="role__options">
+            <label>
+              <input type="radio" name="role" value="student" checked />
+              Student
+            </label>
+            <label>
+              <input type="radio" name="role" value="lecturer" />
+              Lecturer
+            </label>
+          </div>
+        </div>
+
+        <form id="auth-form" class="form">
+          <div class="field">
+            <label for="email">Email</label>
+            <input id="email" name="email" type="email" placeholder="name@example.com" required />
+          </div>
+
+          <div class="field">
+            <label for="password">Password</label>
+            <input id="password" name="password" type="password" required />
+          </div>
+
+          <div id="register-fields" class="register-fields is-hidden">
+            <div class="field">
+              <label for="name">Full name</label>
+              <input id="name" name="name" type="text" />
+            </div>
+
+            <div class="field student-only">
+              <label for="icNumber">IC number</label>
+              <input id="icNumber" name="icNumber" type="text" />
+            </div>
+
+            <div class="field student-only">
+              <label for="phoneNumber">Phone number</label>
+              <input id="phoneNumber" name="phoneNumber" type="tel" />
+            </div>
+
+            <div class="field student-only">
+              <label for="address">Address</label>
+              <input id="address" name="address" type="text" />
+            </div>
+          </div>
+
+          <button id="submit-btn" class="button" type="submit">Login</button>
+        </form>
+
+        <div id="status" class="status" role="status" aria-live="polite"></div>
+      </section>
+    </main>
+
+    <script src="/app.js"></script>
+  </body>
+</html>
