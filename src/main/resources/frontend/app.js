@@ -37,8 +37,8 @@ const setLoading = (isLoading) => {
   submitBtn.textContent = isLoading
     ? "Please wait..."
     : mode === "login"
-    ? "Login"
-    : "Register";
+      ? "Login"
+      : "Register";
 };
 
 const collectFormData = () => {
@@ -71,7 +71,7 @@ const sendRequest = async (path, payload) => {
   let body = null;
   try {
     body = await response.json();
-  } catch (error) {
+  } catch {
     body = null;
   }
 
@@ -109,8 +109,8 @@ form.addEventListener("submit", async (event) => {
       mode === "login"
         ? "/api/auth/login"
         : role === "student"
-        ? "/api/auth/register/student"
-        : "/api/auth/register/lecturer";
+          ? "/api/auth/register/student"
+          : "/api/auth/register/lecturer";
 
     const result = await sendRequest(path, data);
     if (result?.token) {
@@ -131,3 +131,4 @@ form.addEventListener("submit", async (event) => {
 });
 
 toggleMode("login");
+
