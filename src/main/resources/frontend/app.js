@@ -493,6 +493,7 @@ async function renderStudentRecords() {
             <th>Course</th>
             <th>Status</th>
             <th>GPA</th>
+            <th>Registration ID</th>
             <th></th>
           </tr>
         </thead>
@@ -504,6 +505,7 @@ async function renderStudentRecords() {
                 <td>${record.courseCode} - ${record.courseName}</td>
                 <td>${record.status ?? "-"}</td>
                 <td>${record.gpa ?? "-"}</td>
+                <td>${record.registrationId ?? "-"}</td>
                 <td>
                   ${
                     record.status === "Pending"
