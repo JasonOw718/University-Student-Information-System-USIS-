@@ -3,8 +3,11 @@ jwt:
   expiration: 86400000 # 24 hours
 
 spring:
+  web:
+    resources:
+      static-locations: classpath:/frontend/,classpath:/static/
   datasource:
-    url: jdbc:sqlserver://192.168.3.237:1433;databaseName=USIS_Project;encrypt=true;trustServerCertificate=true;
+    url: jdbc:sqlserver://192.168.1.19:1433;databaseName=USIS_Project;encrypt=true;trustServerCertificate=true;
     username: webServer
     password: webServer123
     driver-class-name: com.microsoft.sqlserver.jdbc.SQLServerDriver

@@ -35,6 +35,7 @@ public class SecurityConfig {
         http
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/", "/index.html", "/styles.css", "/app.js").permitAll()
                         .requestMatchers("/api/auth/**").permitAll()
                         // Admin endpoints -> LECTURER only
                         .requestMatchers("/api/admin/**").hasRole("LECTURER")

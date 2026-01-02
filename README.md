@@ -204,3 +204,20 @@ You can explore and test the API endpoints (Signup, Login, Course Registration, 
 
 ## UI MOCKUP
 **[UI MOCKUP](https://JasonOw718.github.io/USIS_MOCKUP/)**
+
+---
+
+## Frontend
+
+This repo includes a no-framework frontend (HTML/CSS/JS) served directly by Spring Boot.
+
+- Location: `src/main/resources/frontend/`
+- Entry point: `index.html` (served at `http://localhost:8080/`)
+- What it supports:
+  - Auth: student/lecturer register + login (JWT stored in `localStorage`)
+  - Student: dashboard (available courses + register), profile (view + update address/phone), records (view + drop), CGPA display
+  - Lecturer: dashboard (add/delete course), pending (approve/drop registrations), update GPA
+
+Run:
+- `.\mvnw.cmd spring-boot:run`
+- Open `http://localhost:8080/` in Chrome
