@@ -3,13 +3,13 @@ import { MainLayout } from '../../layout/MainLayout';
 import { CourseCard } from '../common/CourseCard';
 import { Button } from '../common/Button';
 import { Plus } from 'lucide-react';
+import { lecturerService } from '../../services/lecturer.service';
+import { courseService } from '../../services/course.service';
+import { useEffect } from 'react';
 
 export const LecturerDashboard: React.FC = () => {
-    const [courses, setCourses] = useState([
-        { id: 1, code: 'UGRD-FCI-2530', title: 'CCS6344-DATABASE AND CLOUD SECURITY', gradient: 'from-emerald-400 to-teal-500', creditHours: 3, lecturerName: "Me", lecturerEmail: "me@example.com" },
-        { id: 2, code: 'UGRD-FCI-2530', title: 'CDS6314-DATA MINING', gradient: 'from-blue-500 to-blue-600', creditHours: 4, lecturerName: "Me", lecturerEmail: "me@example.com" },
-        { id: 3, code: 'UGRD-FCI-2530', title: 'CPT6314-FINAL YEAR PROJECT 1', gradient: 'from-blue-400 to-cyan-500', creditHours: 6, lecturerName: "Me", lecturerEmail: "me@example.com" },
-    ]);
+    const [courses, setCourses] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
 
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [newCourse, setNewCourse] = useState({
@@ -18,55 +18,108 @@ export const LecturerDashboard: React.FC = () => {
         creditHours: 3
     });
 
-    const handleAddCourse = () => {
-        const newId = courses.length + 1;
-        setCourses([...courses, {
-            id: newId,
-            code: newCourse.courseId,
-            title: newCourse.courseName,
-            gradient: 'from-purple-500 to-pink-500',
-            creditHours: newCourse.creditHours,
-            lecturerName: "Me",
-            lecturerEmail: "me@example.com"
-        }]);
-        setIsModalOpen(false);
-        setNewCourse({
-            courseId: '',
-            courseName: '',
-            creditHours: 3
-        });
-    };
-
-    const handleDeleteCourse = (id: number) => {
-        if (confirm('Are you sure you want to delete this course?')) {
-            setCourses(courses.filter(c => c.id !== id));
+    const fetchCourses = async () => {
+        try {
+            const response = await courseService.getAvailableCourses();
+            // Optionally filter by lecturer if needed, for now showing all as "Manage Courses"
+            // If the backend returns all, we might want to filter, but let's assume we see what we can manage or all.
+            const gradients = [
+                'from-emerald-400 to-teal-500',
+                'from-blue-500 to-blue-600',
+                'from-blue-400 to-cyan-500',
+                'from-indigo-400 to-purple-500',
+                'from-teal-300 to-cyan-400'
+            ];
+            const mappedCourses = response.map((course, index) => ({
+                ...course,
+                title: course.courseName,
+                code: course.courseId,
+                gradient: gradients[index % gradients.length]
+            }));
+            setCourses(mappedCourses);
+        } catch (error) {
+            console.error("Failed to fetch courses", error);
+        } finally {
+            setLoading(false);
         }
     };
 
-    // Mock students for the selected course view
-    const students = [
-        {
-            address: "123 Main Street, City",
-            email: "test@gmail.com",
-            icNumber: "123456-78-9012",
-            name: "Ka Sheng",
-            phoneNumber: "+60123456789",
-            registrationId: "Re8e69a37",
-            studentId: "Sbdc3e4f9",
-            grade: null
-        },
-        // Can add more mock data here
-    ];
+    useEffect(() => {
+        fetchCourses();
+    }, []);
 
+    const handleAddCourse = async () => {
+        try {
+            await lecturerService.addCourse({
+                courseId: newCourse.courseId,
+                courseName: newCourse.courseName,
+                creditHours: newCourse.creditHours
+            });
+            alert("Course added successfully");
+            setIsModalOpen(false);
+            setNewCourse({
+                courseId: '',
+                courseName: '',
+                creditHours: 3
+            });
+            fetchCourses();
+        } catch (error: any) {
+            console.error("Failed to add course", error);
+            const errorMessage = error.response?.data?.message || "Failed to add course";
+            alert(errorMessage);
+        }
+    };
+
+    const handleDeleteCourse = async (id: string) => { // id passed here is actually courseId (ID from DB) or code?
+        // The CourseCard menu passes course.id. In my mapping above, id is from backend response.
+        if (confirm('Are you sure you want to delete this course?')) {
+            try {
+                await lecturerService.deleteCourse(id);
+                fetchCourses();
+            } catch (error: any) {
+                console.error("Failed to delete course", error);
+                const errorMessage = error.response?.data?.message || "Failed to delete course";
+                alert(errorMessage);
+            }
+        }
+    };
+
+    // Selected Course View for Grading
     const [selectedCourse, setSelectedCourse] = useState<any | null>(null);
-    const [assignGradeModal, setAssignGradeModal] = useState<{ isOpen: boolean; studentId: string | null; studentName: string | null }>({ isOpen: false, studentId: null, studentName: null });
+    const [students, setStudents] = useState<any[]>([]);
+    const [assignGradeModal, setAssignGradeModal] = useState<{ isOpen: boolean; studentId: string | null; studentName: string | null, registrationId: string | null }>({ isOpen: false, studentId: null, studentName: null, registrationId: null });
     const [grade, setGrade] = useState('');
 
-    const handleAssignGrade = () => {
-        // Logic to save grade
-        console.log(`Assigned Grade ${grade} to ${assignGradeModal.studentName}`);
-        setAssignGradeModal({ isOpen: false, studentId: null, studentName: null });
-        setGrade('');
+    const fetchStudents = async (courseId: string) => {
+        try {
+            const response = await lecturerService.getStudentsByCourse(courseId);
+            setStudents(response);
+        } catch (error) {
+            console.error("Failed to fetch students", error);
+        }
+    };
+
+    const handleViewCourse = (course: any) => {
+        setSelectedCourse(course);
+        fetchStudents(course.courseId); // Use courseId (e.g. CS102) instead of internal DB id
+    };
+
+    const handleAssignGrade = async () => {
+        if (!assignGradeModal.registrationId) return;
+        try {
+            await lecturerService.updateGrade({
+                registrationId: assignGradeModal.registrationId,
+                gpa: grade
+            });
+            alert(`Assigned Grade ${grade} to ${assignGradeModal.studentName}`);
+            setAssignGradeModal({ isOpen: false, studentId: null, studentName: null, registrationId: null });
+            setGrade('');
+            if (selectedCourse) fetchStudents(selectedCourse.courseId);
+        } catch (error: any) {
+            console.error("Failed to assign grade", error);
+            const errorMessage = error.response?.data?.message || "Failed to assign grade";
+            alert(errorMessage);
+        }
     };
 
     if (selectedCourse) {
@@ -98,7 +151,7 @@ export const LecturerDashboard: React.FC = () => {
                             </thead>
                             <tbody className="bg-white divide-y divide-gray-200">
                                 {students.map((student) => (
-                                    <tr key={student.studentId} className="hover:bg-gray-50">
+                                    <tr key={student.registrationId} className="hover:bg-gray-50">
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <div className="text-sm font-medium text-gray-900">{student.name}</div>
                                             <div className="text-xs text-gray-500">{student.email}</div>
@@ -110,9 +163,9 @@ export const LecturerDashboard: React.FC = () => {
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{student.registrationId}</td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                            {student.grade ? (
+                                            {student.gpa ? (
                                                 <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                                    {student.grade}
+                                                    {student.gpa}
                                                 </span>
                                             ) : (
                                                 <span className="text-gray-400 italic">Not assigned</span>
@@ -121,13 +174,20 @@ export const LecturerDashboard: React.FC = () => {
                                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                             <Button
                                                 size="sm"
-                                                onClick={() => setAssignGradeModal({ isOpen: true, studentId: student.studentId, studentName: student.name })}
+                                                onClick={() => setAssignGradeModal({ isOpen: true, studentId: student.studentId, studentName: student.name, registrationId: student.registrationId })}
                                             >
                                                 Assign Grade
                                             </Button>
                                         </td>
                                     </tr>
                                 ))}
+                                {students.length === 0 && (
+                                    <tr>
+                                        <td colSpan={6} className="px-6 py-4 text-center text-gray-500">
+                                            No students registered for this course yet.
+                                        </td>
+                                    </tr>
+                                )}
                             </tbody>
                         </table>
                     </div>
@@ -151,7 +211,7 @@ export const LecturerDashboard: React.FC = () => {
                                     />
                                 </div>
                                 <div className="flex justify-end space-x-2">
-                                    <Button variant="ghost" onClick={() => setAssignGradeModal({ isOpen: false, studentId: null, studentName: null })}>Cancel</Button>
+                                    <Button variant="ghost" onClick={() => setAssignGradeModal({ isOpen: false, studentId: null, studentName: null, registrationId: null })}>Cancel</Button>
                                     <Button onClick={handleAssignGrade}>Save Grade</Button>
                                 </div>
                             </div>
@@ -178,10 +238,11 @@ export const LecturerDashboard: React.FC = () => {
             <div className="bg-white p-6 rounded-lg shadow-sm mb-8">
                 <div className="flex justify-between items-center mb-6">
                     <h2 className="text-lg font-semibold">Course overview</h2>
+                    {loading && <span className="text-sm text-gray-500">Loading courses...</span>}
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {courses.map((course) => (
+                    {!loading && courses.map((course) => (
                         <div key={course.id} className="relative group">
                             <CourseCard
                                 code={course.code}
@@ -190,11 +251,11 @@ export const LecturerDashboard: React.FC = () => {
                                 lecturerName={course.lecturerName}
                                 gradient={course.gradient}
                                 role="lecturer"
-                                onClick={() => setSelectedCourse(course)}
+                                onClick={() => handleViewCourse(course)}
                                 menuItems={[
                                     {
                                         label: "Delete",
-                                        onClick: () => handleDeleteCourse(course.id),
+                                        onClick: () => handleDeleteCourse(course.code),
                                         className: "text-[var(--danger)]"
                                     }
                                 ]}
@@ -203,7 +264,7 @@ export const LecturerDashboard: React.FC = () => {
                     ))}
                 </div>
 
-                {courses.length === 0 && (
+                {!loading && courses.length === 0 && (
                     <div className="text-center py-12 text-gray-500">
                         No courses available. Click "Add Course" to create one.
                     </div>

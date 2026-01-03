@@ -1,32 +1,47 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { MainLayout } from '../../layout/MainLayout';
 import { Button } from '../common/Button';
 import { Check, X, Clock } from 'lucide-react';
+import { lecturerService } from '../../services/lecturer.service';
 
 export const PendingRegistrations: React.FC = () => {
-    // Mock Data based on user request structure
-    const [registrations, setRegistrations] = useState([
-        {
-            courseId: "UGRD-FCI-2530",
-            courseName: "CCS6344-DATABASE AND CLOUD SECURITY",
-            registrationId: "Re8e69a37",
-            status: "Pending",
-            studentId: "1191101234", // Populating for display purpose, though user JSON had null
-            studentName: "Ali bin Abu" // Populating for display purpose
-        },
-        {
-            courseId: "UGRD-FCI-2530",
-            courseName: "CDS6314-DATA MINING",
-            registrationId: "Re8e69a38",
-            status: "Pending",
-            studentId: "1191105678",
-            studentName: "Siti Aminah"
-        }
-    ]);
+    const [registrations, setRegistrations] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
 
-    const handleAction = (id: string, action: 'approve' | 'reject') => {
-        console.log(`Processing action: ${action} for ${id}`);
-        setRegistrations(registrations.filter(r => r.registrationId !== id));
+    const fetchRegistrations = async () => {
+        try {
+            const response = await lecturerService.getPendingRegistrations();
+            setRegistrations(response);
+        } catch (error) {
+            console.error("Failed to fetch pending registrations", error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchRegistrations();
+    }, []);
+
+    const handleAction = async (id: string, action: 'approve' | 'reject') => {
+        const status = action === 'approve' ? 'Approved' : 'Rejected'; // Backend expects "Approved" or "Rejected" usually (or ALL CAPS, need to check)
+        // Checking AdminController: updateRegistrationStatus(request).
+        // RegistrationService.java likely expects "Approved"/"Rejected" or similar enum.
+        // Let's assume title case "Approved"/"Rejected" based on previous UI code usage.
+
+        try {
+            const response = await lecturerService.updateRegistrationStatus({
+                registrationId: id,
+                status: status
+            });
+            // Optimistic update
+            setRegistrations(registrations.filter(r => r.registrationId !== id));
+            alert(response.message || `Registration ${action}ed successfully`);
+        } catch (error: any) {
+            console.error(`Failed to ${action} registration`, error);
+            const errorMessage = error.response?.data?.message || `Failed to ${action} registration`;
+            alert(errorMessage);
+        }
     };
 
     return (
@@ -49,7 +64,14 @@ export const PendingRegistrations: React.FC = () => {
                             </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200">
-                            {registrations.map((reg) => (
+                            {loading && (
+                                <tr>
+                                    <td colSpan={5} className="px-6 py-12 text-center text-sm text-gray-500">
+                                        Loading pending registrations...
+                                    </td>
+                                </tr>
+                            )}
+                            {!loading && registrations.map((reg) => (
                                 <tr key={reg.registrationId} className="hover:bg-gray-50 transition-colors">
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                         {reg.registrationId}
@@ -94,7 +116,7 @@ export const PendingRegistrations: React.FC = () => {
                                 </tr>
                             ))}
 
-                            {registrations.length === 0 && (
+                            {!loading && registrations.length === 0 && (
                                 <tr>
                                     <td colSpan={5} className="px-6 py-12 text-center text-gray-500">
                                         No pending registrations found.

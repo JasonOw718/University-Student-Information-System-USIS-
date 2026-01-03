@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { GraduationCap, BookOpen, Lock, Mail, User, Phone, MapPin, CreditCard, Eye, EyeOff } from 'lucide-react';
 import { Button } from '../common/Button';
 import { Input } from '../common/Input';
+import { authService } from '../../services/auth.service';
 
 export const AuthPage: React.FC = () => {
     const navigate = useNavigate();
@@ -10,20 +11,66 @@ export const AuthPage: React.FC = () => {
     const [role, setRole] = useState<'student' | 'lecturer'>('student');
     const [loading, setLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
-    const handleSubmit = (e: React.FormEvent) => {
+    // Form States
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [fullName, setFullName] = useState('');
+    const [icNumber, setIcNumber] = useState('');
+    const [phoneNumber, setPhoneNumber] = useState('');
+    const [address, setAddress] = useState('');
+
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
+        setError(null);
 
-        // Simulate network request
-        setTimeout(() => {
-            setLoading(false);
-            if (role === 'student') {
-                navigate('/student/dashboard');
+        try {
+            if (isLogin) {
+                await authService.login({ email, password });
+                const currentUser = authService.getCurrentUser();
+
+                // Navigate based on role (or returned role from backend if available)
+                // For now, trust the login response logic or fallback to user selection if backend doesn't return role clearly in login response structure used here
+                if (currentUser?.role === 'lecturer') { // Normalized to lowercase in auth service
+                    navigate('/lecturer/dashboard');
+                } else { // Default to student dashboard
+                    navigate('/student/dashboard');
+                }
+
             } else {
-                navigate('/lecturer/dashboard');
+                if (role === 'student') {
+                    await authService.registerStudent({
+                        name: fullName,
+                        email,
+                        password,
+                        icNumber,
+                        phoneNumber,
+                        address,
+                        role: 'student'
+                    });
+                    // Auto login or ask to login? Let's switch to login view for safety
+                    setIsLogin(true);
+                    alert("Registration successful! Please login.");
+
+                } else {
+                    await authService.registerLecturer({
+                        name: fullName,
+                        email,
+                        password
+                    });
+                    setIsLogin(true);
+                    alert("Lecturer registration successful! Please login.");
+                }
             }
-        }, 1000);
+        } catch (err: any) {
+            console.error(err);
+            // Basic error handling
+            setError(err.response?.data?.message || 'Authentication failed. Please check your credentials or try again.');
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
@@ -63,17 +110,28 @@ export const AuthPage: React.FC = () => {
                     </button>
                 </div>
 
+                {/* Error Message */}
+                {error && (
+                    <div className="bg-red-50 text-red-600 p-3 rounded-md mb-4 text-sm text-center">
+                        {error}
+                    </div>
+                )}
+
                 {/* Form */}
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <Input
                         placeholder="Email Address"
                         type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
                         leftIcon={<Mail size={18} />}
                         required
                     />
                     <Input
                         placeholder="Password"
                         type={showPassword ? "text" : "password"}
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
                         leftIcon={<Lock size={18} />}
                         rightIcon={showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                         onRightIconClick={() => setShowPassword(!showPassword)}
@@ -85,6 +143,8 @@ export const AuthPage: React.FC = () => {
                             <Input
                                 placeholder="Full Name"
                                 type="text"
+                                value={fullName}
+                                onChange={(e) => setFullName(e.target.value)}
                                 leftIcon={<User size={18} />}
                                 required
                             />
@@ -94,18 +154,24 @@ export const AuthPage: React.FC = () => {
                                     <Input
                                         placeholder="IC Number"
                                         type="text"
+                                        value={icNumber}
+                                        onChange={(e) => setIcNumber(e.target.value)}
                                         leftIcon={<CreditCard size={18} />}
                                         required
                                     />
                                     <Input
                                         placeholder="Phone Number"
                                         type="tel"
+                                        value={phoneNumber}
+                                        onChange={(e) => setPhoneNumber(e.target.value)}
                                         leftIcon={<Phone size={18} />}
                                         required
                                     />
                                     <Input
                                         placeholder="Address"
                                         type="text"
+                                        value={address}
+                                        onChange={(e) => setAddress(e.target.value)}
                                         leftIcon={<MapPin size={18} />}
                                         required
                                     />
@@ -130,7 +196,10 @@ export const AuthPage: React.FC = () => {
                         {isLogin ? "Don't have an account?" : "Already have an account?"}
                     </span>
                     <button
-                        onClick={() => setIsLogin(!isLogin)}
+                        onClick={() => {
+                            setIsLogin(!isLogin);
+                            setError(null);
+                        }}
                         className="ml-2 font-medium text-[var(--primary)] hover:underline"
                         type="button"
                     >

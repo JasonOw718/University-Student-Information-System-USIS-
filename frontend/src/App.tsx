@@ -6,6 +6,8 @@ import { EnrolledClasses } from './components/student/EnrolledClasses';
 import { LecturerDashboard } from './components/lecturer/LecturerDashboard';
 import { PendingRegistrations } from './components/lecturer/PendingRegistrations';
 
+import { ProtectedRoute } from './components/auth/ProtectedRoute';
+
 function App() {
   return (
     <Router>
@@ -14,13 +16,33 @@ function App() {
         <Route path="/auth" element={<AuthPage />} />
 
         {/* Student Routes */}
-        <Route path="/student/dashboard" element={<StudentDashboard />} />
-        <Route path="/student/profile" element={<ProfilePage />} />
-        <Route path="/student/enrolled" element={<EnrolledClasses />} />
+        <Route path="/student/dashboard" element={
+          <ProtectedRoute allowedRoles={['student']}>
+            <StudentDashboard />
+          </ProtectedRoute>
+        } />
+        <Route path="/student/profile" element={
+          <ProtectedRoute allowedRoles={['student']}>
+            <ProfilePage />
+          </ProtectedRoute>
+        } />
+        <Route path="/student/enrolled" element={
+          <ProtectedRoute allowedRoles={['student']}>
+            <EnrolledClasses />
+          </ProtectedRoute>
+        } />
 
         {/* Lecturer Routes */}
-        <Route path="/lecturer/dashboard" element={<LecturerDashboard />} />
-        <Route path="/lecturer/pending" element={<PendingRegistrations />} />
+        <Route path="/lecturer/dashboard" element={
+          <ProtectedRoute allowedRoles={['lecturer']}>
+            <LecturerDashboard />
+          </ProtectedRoute>
+        } />
+        <Route path="/lecturer/pending" element={
+          <ProtectedRoute allowedRoles={['lecturer']}>
+            <PendingRegistrations />
+          </ProtectedRoute>
+        } />
 
         {/* Fallback */}
         <Route path="*" element={<Navigate to="/auth" replace />} />

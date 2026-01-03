@@ -1,31 +1,56 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { MainLayout } from '../../layout/MainLayout';
 import { CourseCard } from '../common/CourseCard';
+import { courseService } from '../../services/course.service';
+import { studentService } from '../../services/student.service'; // Kept for registerCourse
 
 export const StudentDashboard: React.FC = () => {
-    // Mock Data
-    const [courses] = useState([
-        { id: 1, code: 'UGRD-FCI-2530', title: 'CCS6344-DATABASE AND CLOUD SECURITY', gradient: 'from-emerald-400 to-teal-500', creditHours: 3, lecturerName: "Dr. Sarah Lee" },
-        { id: 2, code: 'UGRD-FCI-2530', title: 'CDS6314-DATA MINING', gradient: 'from-blue-500 to-blue-600', creditHours: 4, lecturerName: "Prof. Alan Turing" },
-        { id: 3, code: 'UGRD-FCI-2530', title: 'CPT6314-FINAL YEAR PROJECT 1', gradient: 'from-blue-400 to-cyan-500', creditHours: 6, lecturerName: "Mr. John Doe" },
-        { id: 4, code: 'UGRD-FCI-2530', title: 'CSE6314-SOFTWARE RELIABILITY & QA', gradient: 'from-indigo-400 to-purple-500', creditHours: 3, lecturerName: "Ms. Emily Chen" },
-        { id: 5, code: 'UGRD-FCI-2530', title: 'CSE6344-THEORY OF COMPUTATION', gradient: 'from-teal-300 to-cyan-400', creditHours: 3, lecturerName: "Dr. Brown" },
-    ]);
+    // State for courses and enrollment
+    const [courses, setCourses] = useState<any[]>([]); // Using any for now to mix API data with frontend props like gradient
+    const [loading, setLoading] = useState(true);
 
-    // Mock previously enrolled courses (IDs)
-    const [enrolledCourseIds, setEnrolledCourseIds] = useState<number[]>([1, 4]);
+    const fetchData = async () => {
+        try {
+            const availableCoursesResponse = await courseService.getAvailableCourses();
 
-    const handleRegister = (courseId: number, courseTitle: string) => {
-        if (!enrolledCourseIds.includes(courseId)) {
-            setEnrolledCourseIds([...enrolledCourseIds, courseId]);
-            console.log(`Registered for ${courseTitle}`);
+            // Add gradients to courses (round-robin or random)
+            const gradients = [
+                'from-emerald-400 to-teal-500',
+                'from-blue-500 to-blue-600',
+                'from-blue-400 to-cyan-500',
+                'from-indigo-400 to-purple-500',
+                'from-teal-300 to-cyan-400'
+            ];
+
+            const mappedCourses = availableCoursesResponse.map((course, index) => ({
+                ...course,
+                title: course.courseName,
+                code: course.courseId,
+                gradient: gradients[index % gradients.length]
+            }));
+
+            setCourses(mappedCourses);
+        } catch (error) {
+            console.error("Failed to fetch dashboard data", error);
+        } finally {
+            setLoading(false);
         }
     };
 
-    const handleDrop = (courseId: number, courseTitle: string) => {
-        if (enrolledCourseIds.includes(courseId)) {
-            setEnrolledCourseIds(enrolledCourseIds.filter(id => id !== courseId));
-            console.log(`Dropped ${courseTitle}`);
+    useEffect(() => {
+        fetchData();
+    }, []);
+
+    const handleRegister = async (courseId: string, courseTitle: string) => {
+        // Optimistic update or wait for API
+        try {
+            await studentService.registerCourse(courseId);
+            alert(`Successfully registered for ${courseTitle}`);
+            fetchData(); // Refresh data
+        } catch (error: any) {
+            console.error("Registration failed", error);
+            const errorMessage = error.response?.data?.message || "Failed to register for course.";
+            alert(errorMessage);
         }
     };
 
@@ -38,12 +63,12 @@ export const StudentDashboard: React.FC = () => {
 
             <div className="bg-white p-6 rounded-lg shadow-sm mb-8">
                 <div className="flex justify-between items-center mb-6">
-                    <h2 className="text-lg font-semibold">Course overview</h2>
+                    <h2 className="text-lg font-semibold">All Courses</h2>
+                    {loading && <span className="text-sm text-gray-500">Loading courses...</span>}
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {courses.map((course) => {
-                        const isEnrolled = enrolledCourseIds.includes(course.id);
+                    {!loading && courses.map((course) => {
                         return (
                             <CourseCard
                                 key={course.id}
@@ -56,20 +81,16 @@ export const StudentDashboard: React.FC = () => {
                                 menuItems={[
                                     {
                                         label: "Register Course",
-                                        onClick: () => handleRegister(course.id, course.title),
-                                        className: "text-[var(--primary)]",
-                                        disabled: isEnrolled
-                                    },
-                                    {
-                                        label: "Drop Course",
-                                        onClick: () => handleDrop(course.id, course.title),
-                                        className: "text-[var(--danger)]",
-                                        disabled: !isEnrolled
+                                        onClick: () => handleRegister(course.code, course.title), // Using courseId (code) for registration
+                                        className: "text-[var(--primary)]"
                                     }
                                 ]}
                             />
                         );
                     })}
+                    {!loading && courses.length === 0 && (
+                        <div className="col-span-full text-center text-gray-500">No courses available.</div>
+                    )}
                 </div>
             </div>
         </MainLayout>

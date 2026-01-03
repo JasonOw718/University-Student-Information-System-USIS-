@@ -3,6 +3,8 @@ import { NavLink } from 'react-router-dom';
 import { User, Menu, X, LogOut } from 'lucide-react';
 import { Button } from './Button';
 
+import { authService } from '../../services/auth.service';
+
 interface NavbarProps {
     role: 'student' | 'lecturer';
 }
@@ -10,14 +12,18 @@ interface NavbarProps {
 export const Navbar: React.FC<NavbarProps> = ({ role }) => {
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
+    const handleLogout = () => {
+        authService.logout();
+    };
+
     const links = role === 'student'
         ? [
-            { name: 'My courses', path: '/student/dashboard' },
+            { name: 'All Courses', path: '/student/dashboard' },
             { name: 'Enrolled Classes', path: '/student/enrolled' },
             { name: 'Profile', path: '/student/profile' },
         ]
         : [
-            { name: 'My courses', path: '/lecturer/dashboard' },
+            { name: 'All Courses', path: '/lecturer/dashboard' },
             { name: 'Pending Registrations', path: '/lecturer/pending' },
         ];
 
@@ -63,7 +69,7 @@ export const Navbar: React.FC<NavbarProps> = ({ role }) => {
                             </div>
                             <span className="text-sm font-medium text-gray-700 hidden lg:block">Hi, User!</span>
                         </div>
-                        <NavLink to="/" className="ml-4">
+                        <NavLink to="/" className="ml-4" onClick={handleLogout}>
                             <Button variant="ghost" size="sm" className="text-gray-500">
                                 <LogOut size={18} />
                             </Button>
@@ -109,6 +115,10 @@ export const Navbar: React.FC<NavbarProps> = ({ role }) => {
                         <NavLink
                             to="/"
                             className="block pl-3 pr-4 py-2 border-l-4 border-transparent text-base font-medium text-red-500 hover:bg-red-50 hover:text-red-700"
+                            onClick={() => {
+                                setIsMobileMenuOpen(false);
+                                handleLogout();
+                            }}
                         >
                             Logout
                         </NavLink>

@@ -1,29 +1,85 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { MainLayout } from '../../layout/MainLayout';
 import { Button } from '../common/Button';
 import { Input } from '../common/Input';
 import { User, Mail, Phone, Camera } from 'lucide-react';
+import { studentService } from '../../services/student.service';
 
 export const ProfilePage: React.FC = () => {
     const [isEditing, setIsEditing] = useState(false);
-
-    // Mock State
-    const [profile] = useState({
-        name: "Ka Sheng",
-        studentId: "Sbdc3e4f9",
-        email: "test@gmail.com",
-        phone: "+60123456789",
-        address: "123 Main Street, City",
-        icNumber: "123456-78-9012",
-        registrationId: null,
-        cgpa: "3.85", // Mock CGPA
+    const [loading, setLoading] = useState(true);
+    const [profile, setProfile] = useState<any>({
+        name: "",
+        studentId: "",
+        email: "",
+        phone: "",
+        address: "",
+        icNumber: "",
+        cgpa: "0.00",
     });
 
-    const handleSave = (e: React.FormEvent) => {
+    useEffect(() => {
+        const fetchProfile = async () => {
+            try {
+                const profileData = await studentService.getProfile();
+                // For CGPA, we need the student ID from profile first
+                let cgpa = "0.00";
+                if (profileData && profileData.studentId) {
+                    try {
+                        const cgpaResponse = await studentService.getCGPA(profileData.studentId);
+                        // Backend returns object { studentId: "...", cgpa: number }
+                        if (cgpaResponse && typeof cgpaResponse.cgpa === 'number') {
+                            cgpa = cgpaResponse.cgpa.toFixed(2);
+                        }
+                    } catch (e) {
+                        console.error("Failed to fetch CGPA", e);
+                    }
+                }
+
+                setProfile({
+                    name: profileData.name,
+                    studentId: profileData.studentId,
+                    email: profileData.email,
+                    phone: profileData.phoneNumber,
+                    address: profileData.address,
+                    icNumber: profileData.icNumber,
+                    cgpa: cgpa
+                });
+            } catch (error) {
+                console.error("Failed to fetch profile", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchProfile();
+    }, []);
+
+    const handleSave = async (e: React.FormEvent) => {
         e.preventDefault();
-        setIsEditing(false);
-        // Logic to save would go here
+        try {
+            await studentService.updateProfile({
+                phoneNumber: profile.phone,
+                address: profile.address
+            });
+            setIsEditing(false);
+            alert("Profile updated successfully!");
+        } catch (error: any) {
+            console.error("Failed to update profile", error);
+            const errorMessage = error.response?.data?.message || "Failed to update profile.";
+            alert(errorMessage);
+        }
     };
+
+    if (loading) {
+        return (
+            <MainLayout role="student">
+                <div className="flex justify-center items-center h-64">
+                    <div className="text-gray-500">Loading profile...</div>
+                </div>
+            </MainLayout>
+        );
+    }
 
     return (
         <MainLayout role="student">
@@ -59,37 +115,39 @@ export const ProfilePage: React.FC = () => {
                         <form onSubmit={handleSave} className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <Input
                                 label="Full Name"
-                                defaultValue={profile.name}
-                                disabled={!isEditing}
+                                value={profile.name}
+                                disabled
                                 leftIcon={<User size={18} />}
                             />
                             <Input
                                 label="Student ID"
-                                defaultValue={profile.studentId}
+                                value={profile.studentId}
                                 disabled
                                 className="bg-gray-50"
                             />
                             <Input
                                 label="Email Address"
-                                defaultValue={profile.email}
-                                disabled={!isEditing}
+                                value={profile.email}
+                                disabled
                                 leftIcon={<Mail size={18} />}
                             />
                             <Input
                                 label="Phone Number"
-                                defaultValue={profile.phone}
+                                value={profile.phone}
+                                onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
                                 disabled={!isEditing}
                                 leftIcon={<Phone size={18} />}
                             />
                             <Input
                                 label="IC Number"
-                                defaultValue={profile.icNumber}
-                                disabled={!isEditing}
+                                value={profile.icNumber}
+                                disabled
                                 className={!isEditing ? "bg-gray-50" : ""}
                             />
                             <Input
                                 label="Address"
-                                defaultValue={profile.address}
+                                value={profile.address}
+                                onChange={(e) => setProfile({ ...profile, address: e.target.value })}
                                 disabled={!isEditing}
                                 className="md:col-span-2"
                             />
