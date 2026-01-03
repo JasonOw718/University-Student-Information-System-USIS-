@@ -43,12 +43,11 @@ public class AdminService {
                 .orElseThrow(() -> new RuntimeException("Registration not found"));
 
         if ("Pending".equals(registration.getRegistrationStatus())) {
-            if (!("Approved".equals(request.getStatus()) || "Dropped".equals(request.getStatus()))) {
+            if (!("Approved".equals(request.getStatus()) || "Rejected".equals(request.getStatus()))) {
                 throw new RuntimeException("Invalid registration status");
             }
         }else{
             throw new RuntimeException("Registration has already been approved or rejected");
-
         }
 
         registration.setRegistrationStatus(request.getStatus());

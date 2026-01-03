@@ -23,5 +23,6 @@ public interface CourseRegistrationRepository extends JpaRepository<CourseRegist
         @Query(value = "SELECT * FROM University.COURSE_REGISTRATION WHERE CourseID = :courseId", nativeQuery = true)
         List<CourseRegistration> findAllByCourseId(@Param("courseId") String courseId);
 
-        List<CourseRegistration> findByCourse_CourseIdAndRegistrationStatus(String courseId, String status);
+        @Query(value = "SELECT * FROM University.COURSE_REGISTRATION WHERE CourseID = :courseId AND RegistrationStatus = :status", nativeQuery = true)
+        List<CourseRegistration> findByCourse_CourseIdAndRegistrationStatus(@Param("courseId") String courseId,@Param("status") String status);
 }

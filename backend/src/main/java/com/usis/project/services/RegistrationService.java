@@ -31,7 +31,7 @@ public class RegistrationService {
             courseRegistration = new CourseRegistration();
             courseRegistration.setRegistrationId("R" + UUID.randomUUID().toString().substring(0, 8));
         }else{
-            if("Pending".equals(courseRegistration.getRegistrationStatus())){
+            if("Pending".equals(courseRegistration.getRegistrationStatus()) || "Approved".equals(courseRegistration.getRegistrationStatus())){
                 throw new RuntimeException("Course registration already exists");
             }
         }
