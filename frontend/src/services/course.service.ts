@@ -1,9 +1,9 @@
 import api from './api';
 
 export interface CourseResponse {
-    id: string; // The backend might use MongoDB ID strings
+    id: string;
     courseName: string;
-    courseId: string; // The code like "CS101"
+    courseId: string; 
     creditHours: number;
     lecturerId: string;
     lecturerName: string;

@@ -22,12 +22,10 @@ export const ProfilePage: React.FC = () => {
         const fetchProfile = async () => {
             try {
                 const profileData = await studentService.getProfile();
-                // For CGPA, we need the student ID from profile first
                 let cgpa = "0.00";
                 if (profileData && profileData.studentId) {
                     try {
                         const cgpaResponse = await studentService.getCGPA(profileData.studentId);
-                        // Backend returns object { studentId: "...", cgpa: number }
                         if (cgpaResponse && typeof cgpaResponse.cgpa === 'number') {
                             cgpa = cgpaResponse.cgpa.toFixed(2);
                         }

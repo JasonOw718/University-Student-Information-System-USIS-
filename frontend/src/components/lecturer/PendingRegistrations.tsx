@@ -24,17 +24,13 @@ export const PendingRegistrations: React.FC = () => {
     }, []);
 
     const handleAction = async (id: string, action: 'approve' | 'reject') => {
-        const status = action === 'approve' ? 'Approved' : 'Rejected'; // Backend expects "Approved" or "Rejected" usually (or ALL CAPS, need to check)
-        // Checking AdminController: updateRegistrationStatus(request).
-        // RegistrationService.java likely expects "Approved"/"Rejected" or similar enum.
-        // Let's assume title case "Approved"/"Rejected" based on previous UI code usage.
-
+        const status = action === 'approve' ? 'Approved' : 'Rejected'; 
         try {
             const response = await lecturerService.updateRegistrationStatus({
                 registrationId: id,
                 status: status
             });
-            // Optimistic update
+            
             setRegistrations(registrations.filter(r => r.registrationId !== id));
             alert(response.message || `Registration ${action}ed successfully`);
         } catch (error: any) {

@@ -3,11 +3,11 @@ import api from './api';
 export interface UserSignupRequest {
     name: string;
     email: string;
-    password?: string; // Optional in frontend model if handled differently, but required by backend
+    password?: string; 
     icNumber?: string;
     phoneNumber?: string;
     address?: string;
-    role?: 'student' | 'lecturer'; // Frontend convenience
+    role?: 'student' | 'lecturer'; 
 }
 
 export interface LecturerSignUpRequest {

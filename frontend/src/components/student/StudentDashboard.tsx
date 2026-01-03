@@ -2,11 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { MainLayout } from '../../layout/MainLayout';
 import { CourseCard } from '../common/CourseCard';
 import { courseService } from '../../services/course.service';
-import { studentService } from '../../services/student.service'; // Kept for registerCourse
+import { studentService } from '../../services/student.service'; 
 
 export const StudentDashboard: React.FC = () => {
-    // State for courses and enrollment
-    const [courses, setCourses] = useState<any[]>([]); // Using any for now to mix API data with frontend props like gradient
+    const [courses, setCourses] = useState<any[]>([]); 
     const [loading, setLoading] = useState(true);
 
     const fetchData = async () => {
@@ -42,11 +41,10 @@ export const StudentDashboard: React.FC = () => {
     }, []);
 
     const handleRegister = async (courseId: string, courseTitle: string) => {
-        // Optimistic update or wait for API
         try {
             await studentService.registerCourse(courseId);
             alert(`Successfully registered for ${courseTitle}`);
-            fetchData(); // Refresh data
+            fetchData(); 
         } catch (error: any) {
             console.error("Registration failed", error);
             const errorMessage = error.response?.data?.message || "Failed to register for course.";

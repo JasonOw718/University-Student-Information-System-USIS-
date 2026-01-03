@@ -21,8 +21,6 @@ export const LecturerDashboard: React.FC = () => {
     const fetchCourses = async () => {
         try {
             const response = await courseService.getAvailableCourses();
-            // Optionally filter by lecturer if needed, for now showing all as "Manage Courses"
-            // If the backend returns all, we might want to filter, but let's assume we see what we can manage or all.
             const gradients = [
                 'from-emerald-400 to-teal-500',
                 'from-blue-500 to-blue-600',
@@ -70,8 +68,7 @@ export const LecturerDashboard: React.FC = () => {
         }
     };
 
-    const handleDeleteCourse = async (id: string) => { // id passed here is actually courseId (ID from DB) or code?
-        // The CourseCard menu passes course.id. In my mapping above, id is from backend response.
+    const handleDeleteCourse = async (id: string) => { 
         if (confirm('Are you sure you want to delete this course?')) {
             try {
                 await lecturerService.deleteCourse(id);
@@ -84,7 +81,6 @@ export const LecturerDashboard: React.FC = () => {
         }
     };
 
-    // Selected Course View for Grading
     const [selectedCourse, setSelectedCourse] = useState<any | null>(null);
     const [students, setStudents] = useState<any[]>([]);
     const [assignGradeModal, setAssignGradeModal] = useState<{ isOpen: boolean; studentId: string | null; studentName: string | null, registrationId: string | null }>({ isOpen: false, studentId: null, studentName: null, registrationId: null });
@@ -101,7 +97,7 @@ export const LecturerDashboard: React.FC = () => {
 
     const handleViewCourse = (course: any) => {
         setSelectedCourse(course);
-        fetchStudents(course.courseId); // Use courseId (e.g. CS102) instead of internal DB id
+        fetchStudents(course.courseId); 
     };
 
     const handleAssignGrade = async () => {

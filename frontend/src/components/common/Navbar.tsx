@@ -59,10 +59,7 @@ export const Navbar: React.FC<NavbarProps> = ({ role }) => {
 
                     {/* Right Side Icons */}
                     <div className="hidden sm:ml-6 sm:flex sm:items-center space-x-4">
-                        {/* Icons removed as per request for both roles (or specifically added removal for lecturer imply none) */}
-                        {/* {role !== 'student' && ( ... )} - Removed */}
 
-                        {/* Profile Dropdown (Simplified) */}
                         <div className="ml-3 relative flex items-center space-x-2">
                             <div className="h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center text-gray-500">
                                 <User size={18} />

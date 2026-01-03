@@ -11,7 +11,6 @@ export const EnrolledClasses: React.FC = () => {
         setLoading(true);
         try {
             const response: any = await studentService.getRecords();
-            // Assuming response is an array of records
             setEnrolledClasses(response);
         } catch (error) {
             console.error("Failed to fetch enrolled classes", error);
