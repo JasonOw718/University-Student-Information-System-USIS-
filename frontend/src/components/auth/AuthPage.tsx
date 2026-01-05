@@ -20,6 +20,7 @@ export const AuthPage: React.FC = () => {
     const [icNumber, setIcNumber] = useState('');
     const [phoneNumber, setPhoneNumber] = useState('');
     const [address, setAddress] = useState('');
+    const [pdpaConsent, setPdpaConsent] = useState(false);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -41,6 +42,11 @@ export const AuthPage: React.FC = () => {
 
             } else {
                 if (role === 'student') {
+                    if (!pdpaConsent) {
+                        setError('You must consent to data collection (PDPA) to register.');
+                        setLoading(false);
+                        return;
+                    }
                     await authService.registerStudent({
                         name: fullName,
                         email,
@@ -48,7 +54,8 @@ export const AuthPage: React.FC = () => {
                         icNumber,
                         phoneNumber,
                         address,
-                        role: 'student'
+                        role: 'student',
+                        pdpaConsent
                     });
                     // Auto login or ask to login? Let's switch to login view for safety
                     setIsLogin(true);
@@ -175,6 +182,21 @@ export const AuthPage: React.FC = () => {
                                         leftIcon={<MapPin size={18} />}
                                         required
                                     />
+
+                                    <div className="flex items-start space-x-3 mt-2">
+                                        <input
+                                            id="pdpa-consent"
+                                            type="checkbox"
+                                            checked={pdpaConsent}
+                                            onChange={(e) => setPdpaConsent(e.target.checked)}
+                                            className="w-4 h-4 mt-1"
+                                        />
+                                        <label htmlFor="pdpa-consent" className="text-sm text-[var(--text-secondary)]">
+                                            I consent to the collection and processing of my personal data for
+                                            educational and administrative purposes in accordance with PDPA.
+                                            See our <a href="/privacy" className="text-[var(--primary)] underline">Privacy Policy</a>.
+                                        </label>
+                                    </div>
                                 </>
                             )}
                         </>

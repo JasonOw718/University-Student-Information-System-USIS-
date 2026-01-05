@@ -3,11 +3,12 @@ import api from './api';
 export interface UserSignupRequest {
     name: string;
     email: string;
-    password?: string; 
+    password?: string;
     icNumber?: string;
     phoneNumber?: string;
     address?: string;
-    role?: 'student' | 'lecturer'; 
+    role?: 'student' | 'lecturer';
+    pdpaConsent?: boolean;
 }
 
 export interface LecturerSignUpRequest {
