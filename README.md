@@ -236,6 +236,9 @@ To get the frontend running locally:
 
 ### Available Scripts
 
+## SQL Server Implementation
+Link to steps: https://www.notion.so/Assignment-1-2dea7ab1371e80ab9842f8b4665930bc?source=copy_link 
+
 *   `npm run dev`: Starts the development server.
 *   `npm run build`: Builds the app for production.
 *   `npm run lint`: Runs ESLint to check for code quality issues.
