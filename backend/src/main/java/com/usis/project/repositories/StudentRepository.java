@@ -2,9 +2,11 @@ package com.usis.project.repositories;
 
 import com.usis.project.entities.Student;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
 
@@ -15,4 +17,14 @@ public interface StudentRepository extends JpaRepository<Student, String> {
     Optional<Student> findByEmail(String email);
 
     @Query(value = "EXEC University.usp_FindStudentById @StudentId = :studentId", nativeQuery = true)
-    Optional<Student> findById(@Param("studentId") String studentId);}
+    Optional<Student> findById(@Param("studentId") String studentId);
+
+    @Modifying
+    @Transactional
+    @Query(value = "EXEC University.usp_UpdateStudentProfile @StudentId = :id, @Address = :addr, @PhoneNumber = :phone", nativeQuery = true)
+    void updateProfileProcedure(
+            @Param("id") String id,
+            @Param("addr") String address,
+            @Param("phone") String phoneNumber
+    );
+}

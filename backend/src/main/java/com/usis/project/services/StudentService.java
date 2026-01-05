@@ -36,18 +36,16 @@ public class StudentService {
     }
 
     public void updateProfile(String studentId, UpdateProfileRequest request) {
-        Student student = studentRepository.findById(studentId)
-                .orElseThrow(() -> new RuntimeException("Student not found"));
-
-        if (request.getAddress() != null) {
-            student.setAddress(request.getAddress());
+        try {
+            studentRepository.updateProfileProcedure(
+                    studentId,
+                    request.getAddress(),
+                    request.getPhoneNumber()
+            );
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to update profile");
         }
-        if (request.getPhoneNumber() != null) {
-            student.setPhoneNumber(request.getPhoneNumber());
-        }
-        studentRepository.save(student);
     }
-
     public List<StudentRecordResponse> getStudentRecords(String studentId) {
         List<StudentRecordView> registrations = registrationRepository.findByStudent_StudentId(studentId);
 
