@@ -27,4 +27,19 @@ public interface StudentRepository extends JpaRepository<Student, String> {
             @Param("addr") String address,
             @Param("phone") String phoneNumber
     );
+
+    @Modifying
+    @Transactional
+    @Query(value = "EXEC University.usp_RegisterStudent " +
+            "@StudentId=:id, @Name=:name, @Email=:email, @Password=:pass, " +
+            "@IcNumber=:ic, @Address=:addr, @PhoneNumber=:phone", nativeQuery = true)
+    void registerStudentProcedure(
+            @Param("id") String id,
+            @Param("name") String name,
+            @Param("email") String email,
+            @Param("pass") String password,
+            @Param("ic") String icNumber,
+            @Param("addr") String address,
+            @Param("phone") String phoneNumber
+    );
 }

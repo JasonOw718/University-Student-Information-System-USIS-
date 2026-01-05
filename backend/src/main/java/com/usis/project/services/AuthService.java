@@ -30,62 +30,60 @@ public class AuthService {
     private final LecturerRepository lecturerRepository;
 
     public AuthResponse registerStudent(UserSignupRequest request) {
-        if (studentRepository.findByEmail(request.getEmail()).isPresent()) {
-            throw new RuntimeException("Email already exists");
+        String studentId = "S" + UUID.randomUUID().toString().substring(0, 8);
+        String encodedPassword = passwordEncoder.encode(request.getPassword());
+
+        try {
+            studentRepository.registerStudentProcedure(
+                    studentId,
+                    request.getName(),
+                    request.getEmail(),
+                    encodedPassword,
+                    request.getIcNumber(),
+                    request.getAddress(),
+                    request.getPhoneNumber()
+            );
+
+            UserDetails userDetails = userDetailsService.loadUserByUsername(request.getEmail());
+            String token = jwtUtil.generateToken(userDetails, "STUDENT", studentId);
+
+            AuthResponse response = new AuthResponse();
+            response.setToken(token);
+            response.setRole("STUDENT");
+            response.setId(studentId);
+
+            return response;
+
+        } catch (Exception e) {
+            throw new RuntimeException("Sign up as student failed");
         }
-
-        if (lecturerRepository.findByEmail(request.getEmail()).isPresent()) {
-            throw new RuntimeException("Email already exists");
-        }
-
-        Student student = new Student();
-        student.setStudentId("S" + UUID.randomUUID().toString().substring(0, 8));
-        student.setName(request.getName());
-        student.setIcNumber(request.getIcNumber());
-        student.setEmail(request.getEmail());
-        student.setPassword(passwordEncoder.encode(request.getPassword()));
-        student.setAddress(request.getAddress());
-        student.setPhoneNumber(request.getPhoneNumber());
-
-        studentRepository.save(student);
-
-        UserDetails userDetails = userDetailsService.loadUserByUsername(student.getEmail());
-        String token = jwtUtil.generateToken(userDetails, "STUDENT", student.getStudentId());
-
-        AuthResponse response = new AuthResponse();
-        response.setToken(token);
-        response.setRole("STUDENT");
-        response.setId(student.getStudentId());
-
-        return response;
     }
 
     public AuthResponse registerLecturer(LecturerSignUpRequest request) {
-        if (studentRepository.findByEmail(request.getEmail()).isPresent()) {
-            throw new RuntimeException("Email already exists");
+        String lecturerId = "L" + UUID.randomUUID().toString().substring(0, 8);
+        String encodedPassword = passwordEncoder.encode(request.getPassword());
+
+        try {
+            lecturerRepository.registerLecturerProcedure(
+                    lecturerId,
+                    request.getName(),
+                    request.getEmail(),
+                    encodedPassword
+            );
+
+            UserDetails userDetails = userDetailsService.loadUserByUsername(request.getEmail());
+            String token = jwtUtil.generateToken(userDetails, "LECTURER", lecturerId);
+
+            AuthResponse response = new AuthResponse();
+            response.setToken(token);
+            response.setRole("LECTURER");
+            response.setId(lecturerId);
+
+            return response;
+
+        } catch (Exception e) {
+            throw new RuntimeException("Sign up as lecturer failed");
         }
-
-        if (lecturerRepository.findByEmail(request.getEmail()).isPresent()) {
-            throw new RuntimeException("Email already exists");
-        }
-
-        Lecturer lecturer = new Lecturer();
-        lecturer.setLecturerId("L" + UUID.randomUUID().toString().substring(0, 8));
-        lecturer.setName(request.getName());
-        lecturer.setEmail(request.getEmail());
-        lecturer.setPassword(passwordEncoder.encode(request.getPassword()));
-
-        lecturerRepository.save(lecturer);
-
-        UserDetails userDetails = userDetailsService.loadUserByUsername(lecturer.getEmail());
-        String token = jwtUtil.generateToken(userDetails, "LECTURER", lecturer.getLecturerId());
-
-        AuthResponse response = new AuthResponse();
-        response.setToken(token);
-        response.setRole("LECTURER");
-        response.setId(lecturer.getLecturerId());
-
-        return response;
     }
 
     public AuthResponse login(AuthRequest request) {
