@@ -4,7 +4,7 @@ import java.math.BigDecimal;
 
 public interface RegistrationView {
     String getRegistrationId();
-    BigDecimal getSubjectGpa();
+    String getName();
     String getRegistrationStatus();
     String getStudentId();
     String getCourseId();

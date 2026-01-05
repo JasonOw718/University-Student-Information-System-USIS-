@@ -68,6 +68,7 @@ public class AdminService {
                     res.setRegistrationId(view.getRegistrationId());
                     res.setStudentId(view.getStudentId());
                     res.setCourseId(view.getCourseId());
+                    res.setStudentName(view.getName());
                     res.setStatus(view.getRegistrationStatus());
 
                     return res;
