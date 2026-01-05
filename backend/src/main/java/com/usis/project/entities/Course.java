@@ -17,7 +17,7 @@ public class Course {
     @Column(name = "CreditHours", nullable = false)
     private Integer creditHours;
 
-    @ManyToOne
     @JoinColumn(name = "LecturerID")
+    @ManyToOne(fetch = FetchType.LAZY)
     private Lecturer lecturer;
 }

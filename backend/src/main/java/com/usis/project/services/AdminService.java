@@ -1,131 +1,94 @@
 package com.usis.project.services;
 
-import com.usis.project.entities.Course;
-import com.usis.project.entities.CourseRegistration;
-import com.usis.project.entities.Lecturer;
-import com.usis.project.entities.Student;
 import com.usis.project.models.*;
+import com.usis.project.models.projection.RegistrationView;
+import com.usis.project.models.projection.StudentProfileView;
 import com.usis.project.repositories.CourseRegistrationRepository;
 import com.usis.project.repositories.CourseRepository;
-import com.usis.project.repositories.LecturerRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.util.ObjectUtils;
 
 import java.util.List;
-import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
 public class AdminService {
     private final CourseRegistrationRepository registrationRepository;
     private final CourseRepository courseRepository;
-    private final LecturerRepository lecturerRepository;
 
     public void updateGrade(UpdateGradeRequest request) {
-        CourseRegistration registration = registrationRepository.findById(request.getRegistrationId())
-                .orElseThrow(() -> new RuntimeException("Registration not found"));
-
-        if ("Dropped".equals(registration.getRegistrationStatus())) {
-            throw new RuntimeException("Registration has been dropped");
+        try {
+            registrationRepository.updateGradeProcedure(
+                    request.getRegistrationId(),
+                    request.getGpa()
+            );
+        } catch (Exception e) {
+            throw new RuntimeException("Error updating grade procedure");
         }
-
-        if ("Pending".equals(registration.getRegistrationStatus())) {
-            throw new RuntimeException("Registration is not approved yet");
-        }
-
-        registration.setSubjectGpa(request.getGpa());
-        registrationRepository.save(registration);
     }
 
     public void updateRegistrationStatus(UpdateRegistrationStatusRequest request) {
-        CourseRegistration registration = registrationRepository.findById(request.getRegistrationId())
-                .orElseThrow(() -> new RuntimeException("Registration not found"));
-
-        if ("Pending".equals(registration.getRegistrationStatus())) {
-            if (!("Approved".equals(request.getStatus()) || "Rejected".equals(request.getStatus()))) {
-                throw new RuntimeException("Invalid registration status");
-            }
-        }else{
-            throw new RuntimeException("Registration has already been approved or rejected");
+        try {
+            registrationRepository.updateRegistrationStatusProcedure(
+                    request.getRegistrationId(),
+                    request.getStatus()
+            );
+        } catch (Exception e) {
+            throw new RuntimeException("Registration Status update failed");
         }
-
-        registration.setRegistrationStatus(request.getStatus());
-        registrationRepository.save(registration);
     }
-
     public void addCourse(CourseRequest request, String lecturerId) {
-        if (courseRepository.existsById(request.getCourseId())) {
-            throw new RuntimeException("Course ID already exists");
+        try {
+            courseRepository.addCourseProcedure(
+                    request.getCourseId(),
+                    request.getCourseName(),
+                    request.getCreditHours(),
+                    lecturerId
+            );
+        } catch (Exception e) {
+            throw new RuntimeException("Add course failed");
         }
-        Lecturer lecturer = lecturerRepository.findByLecturerId(lecturerId);
-        if(Objects.isNull(lecturer)) {
-            throw new RuntimeException("Lecturer with id " + lecturerId + " not found");
-        }
-
-        Course course = new Course();
-        course.setCourseId(request.getCourseId());
-        course.setCourseName(request.getCourseName());
-        course.setCreditHours(request.getCreditHours());
-        course.setLecturer(lecturer);
-        courseRepository.save(course);
     }
 
-    public void deleteCourse(String courseId,String lecturerId) {
-        Course course = courseRepository.findById(courseId).orElseThrow(() -> new RuntimeException("Course ID not found"));
-        if (!course.getLecturer().getLecturerId().equals(lecturerId)) {
-            throw new RuntimeException("You cannot delete other lecturer class");
-        }
-
-        List<CourseRegistration> courseRegistrationList = registrationRepository.findAllByCourseId(courseId)
-                                                            .stream()
-                                                            .filter(courseRegistration -> "Approved".equals(courseRegistration.getRegistrationStatus())).toList();
-        if (courseRegistrationList.isEmpty()) {
-            courseRepository.deleteById(courseId);
-        } else {
-            throw new RuntimeException("Course has registration already, delete couldnt be performed.");
+    public void deleteCourse(String courseId, String lecturerId) {
+        try {
+            courseRepository.deleteCourseProcedure(courseId, lecturerId);
+        } catch (Exception e) {
+            throw new RuntimeException("Delete course failed");
         }
     }
 
     public List<CourseRegistrationResponse> getPendingRegistrations() {
-        return registrationRepository.findByRegistrationStatus("Pending").stream()
-                .map(reg -> {
+        List<RegistrationView> registrations = registrationRepository.findByRegistrationStatus("Pending");
+
+        return registrations.stream()
+                .map(view -> {
                     CourseRegistrationResponse res = new CourseRegistrationResponse();
-                    res.setRegistrationId(reg.getRegistrationId());
-                    Student student = reg.getStudent();
-                    Course course = reg.getCourse();
 
-                    if(ObjectUtils.isEmpty(student)) {
-                        throw new RuntimeException("Student not found");
-                    }
+                    res.setRegistrationId(view.getRegistrationId());
+                    res.setStudentId(view.getStudentId());
+                    res.setCourseId(view.getCourseId());
+                    res.setStatus(view.getRegistrationStatus());
 
-                    if(ObjectUtils.isEmpty(course)) {
-                        throw new RuntimeException("Course not found");
-                    }
-
-                    res.setStudentId(student.getStudentId());
-                    res.setStudentName(student.getName());
-                    res.setCourseId(course.getCourseId());
-                    res.setCourseName(course.getCourseName());
-                    res.setStatus(reg.getRegistrationStatus());
                     return res;
                 })
                 .toList();
     }
 
     public List<StudentProfileResponse> getStudentsByCourseId(String courseId) {
-        return registrationRepository.findByCourse_CourseIdAndRegistrationStatus(courseId, "Approved").stream()
-                .map(reg -> {
-                    Student student = reg.getStudent();
+        List<StudentProfileView> results = registrationRepository.findApprovedStudentsByCourse(courseId);
+
+        return results.stream()
+                .map(view -> {
                     StudentProfileResponse res = new StudentProfileResponse();
-                    res.setStudentId(student.getStudentId());
-                    res.setName(student.getName());
-                    res.setEmail(student.getEmail());
-                    res.setIcNumber(student.getIcNumber());
-                    res.setAddress(student.getAddress());
-                    res.setPhoneNumber(student.getPhoneNumber());
-                    res.setRegistrationId(reg.getRegistrationId());
-                    res.setGpa(reg.getSubjectGpa());
+                    res.setRegistrationId(view.getRegistrationId());
+                    res.setGpa(view.getSubjectGpa());
+                    res.setStudentId(view.getStudentId());
+                    res.setName(view.getName());
+                    res.setEmail(view.getEmail());
+                    res.setIcNumber(view.getIcNumber());
+                    res.setAddress(view.getAddress());
+                    res.setPhoneNumber(view.getPhoneNumber());
                     return res;
                 })
                 .toList();
