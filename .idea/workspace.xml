@@ -4,15 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="50e7a7b8-f777-48ea-9c55-4d2a1d1d18ae" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/frontend/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/package-lock.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/package.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/components/auth/AuthPage.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/components/auth/AuthPage.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/components/lecturer/LecturerDashboard.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/components/lecturer/LecturerDashboard.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/components/lecturer/PendingRegistrations.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/components/lecturer/PendingRegistrations.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/components/student/EnrolledClasses.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/components/student/EnrolledClasses.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/components/student/StudentDashboard.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/components/student/StudentDashboard.tsx" afterDir="false" />
-    </list>
+    <list default="true" id="50e7a7b8-f777-48ea-9c55-4d2a1d1d18ae" name="Changes" comment="" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -44,10 +36,11 @@
     "RequestMappingsPanelWidth0": "75",
     "RequestMappingsPanelWidth1": "75",
     "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
     "RunOnceActivity.git.unshallow": "true",
     "Spring Boot.ProjectApplication.executor": "Debug",
     "com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1": "true",
-    "git-widget-placeholder": "fb1",
+    "git-widget-placeholder": "main",
     "junie.onboarding.icon.badge.shown": "true",
     "kotlin-language-version-configured": "true",
     "last_opened_file_path": "/Users/kasheng/Downloads/University-Student-Information-System-USIS-",
@@ -73,7 +66,8 @@
       <method v="2" />
     </configuration>
     <configuration name="ProjectApplication" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot" nameIsGenerated="true">
-      <module name="project" />
+      <option name="ALTERNATIVE_JRE_PATH" value="openjdk-25" />
+      <option name="ALTERNATIVE_JRE_PATH_ENABLED" value="true" />
       <option name="SPRING_BOOT_MAIN_CLASS" value="com.usis.project.ProjectApplication" />
       <method v="2">
         <option name="Make" enabled="true" />
@@ -97,6 +91,7 @@
       <updated>1767454069580</updated>
       <workItem from="1767454071715" duration="1938000" />
       <workItem from="1767456759844" duration="13000" />
+      <workItem from="1769321551811" duration="1508000" />
     </task>
     <servers />
   </component>

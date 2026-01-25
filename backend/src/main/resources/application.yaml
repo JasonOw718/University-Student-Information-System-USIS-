@@ -4,18 +4,15 @@ jwt:
 
 spring:
   datasource:
-    url: jdbc:sqlserver://192.168.3.237:1433;databaseName=USIS_Project;encrypt=true;trustServerCertificate=true;
-    username: webServer
-    password: webServer123
-    driver-class-name: com.microsoft.sqlserver.jdbc.SQLServerDriver
+    url: jdbc:mysql://localhost:3307/USIS_Project?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
+    username: usis_user
+    password: usis_password
+    driver-class-name: com.mysql.cj.jdbc.Driver
 
   jpa:
     show-sql: true
-    hibernate:
-      ddl-auto: validate
-      naming:
-        physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
-
     properties:
       hibernate:
-        dialect: org.hibernate.dialect.SQLServerDialect
+        dialect: org.hibernate.dialect.MySQLDialect
+    hibernate:
+      ddl-auto: update
