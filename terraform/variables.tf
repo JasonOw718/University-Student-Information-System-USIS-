@@ -1,24 +1,28 @@
+variable "project_name" {
+  type    = string
+  default = "usis-project"
+}
+
 variable "aws_region" {
   type    = string
   default = "us-east-1"
 }
 
-variable "project_name" {
-  type    = string
-  default = "project"
-}
-
-# Use your own IP in CIDR form (recommended): "x.x.x.x/32"
 variable "allowed_ssh_cidr" {
-  type    = string
-  default = "0.0.0.0/0"
+  type        = string
+  description = "Your public IP CIDR for SSH to bastion, e.g. 1.2.3.4/32"
 }
 
 variable "key_name" {
-  type = string
+  type        = string
+  description = "EC2 keypair name in AWS (lab keypair name)"
 }
 
-# RDS
+variable "site_bucket_name" {
+  type        = string
+  description = "Existing S3 bucket name for frontend hosting"
+}
+
 variable "db_name" {
   type    = string
   default = "USIS_Project"
@@ -35,16 +39,16 @@ variable "db_password" {
 }
 
 variable "backend_container_image" {
-  type = string
+  type        = string
+  description = "Docker image for backend, must support linux/amd64"
 }
 
 variable "backend_health_path" {
   type    = string
-  default = "/"
+  default = "/api/health"
 }
 
-variable "site_bucket_name" {
+variable "cloudtrail_bucket_name" {
   type        = string
-  description = "Existing S3 bucket name created manually in the AWS console (sandbox-safe)."
+  description = "Name of the MANUALLY created S3 bucket for CloudTrail logs"
 }
-
