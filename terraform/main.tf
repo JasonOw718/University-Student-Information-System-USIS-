@@ -5,7 +5,7 @@ resource "aws_vpc" "this" {
   cidr_block                       = "10.0.0.0/16"
   enable_dns_hostnames             = true
   enable_dns_support               = true
-  # MODIFIED: Enable IPv6
+  # IPv6 Enabled
   assign_generated_ipv6_cidr_block = true
    
   tags = { Name = "${var.project_name}-vpc" }
@@ -96,7 +96,6 @@ resource "aws_subnet" "private_db_b" {
 
   tags = { Name = "${var.project_name}-private-db-1b" }
 }
-
 
 ############################
 # Network ACLs (NACL)
@@ -248,7 +247,7 @@ resource "aws_route_table_association" "public_b_assoc" {
   route_table_id = aws_route_table.public_rt.id
 }
 
-# NAT Gateway (IPv4 only, standard for Academy)
+# NAT Gateway
 resource "aws_eip" "nat_eip" {
   domain = "vpc"
   tags   = { Name = "${var.project_name}-nat-eip" }
@@ -261,7 +260,7 @@ resource "aws_nat_gateway" "nat" {
   tags          = { Name = "${var.project_name}-nat" }
 }
 
-# Private RT -> NAT (IPv4 only)
+# Private RT -> NAT
 resource "aws_route_table" "private_rt" {
   vpc_id = aws_vpc.this.id
   tags   = { Name = "${var.project_name}-private-rt" }
@@ -309,7 +308,6 @@ resource "aws_security_group" "alb_sg" {
     from_port       = 80
     to_port         = 80
     protocol        = "tcp"
-    # Managed Prefix List includes both IPv4 and IPv6 automatically
     prefix_list_ids = [data.aws_ec2_managed_prefix_list.cloudfront.id]
   }
 
@@ -319,7 +317,6 @@ resource "aws_security_group" "alb_sg" {
     to_port          = 0
     protocol         = "-1"
     cidr_blocks      = ["0.0.0.0/0"]
-    # MODIFIED: Allow IPv6 Egress
     ipv6_cidr_blocks = ["::/0"]
   }
 
@@ -344,7 +341,6 @@ resource "aws_security_group" "backend_sg" {
     to_port          = 0
     protocol         = "-1"
     cidr_blocks      = ["0.0.0.0/0"]
-    # MODIFIED: Allow IPv6 Egress
     ipv6_cidr_blocks = ["::/0"]
   }
 
@@ -369,7 +365,6 @@ resource "aws_security_group" "rds_sg" {
     to_port          = 0
     protocol         = "-1"
     cidr_blocks      = ["0.0.0.0/0"]
-    # MODIFIED: Allow IPv6 Egress
     ipv6_cidr_blocks = ["::/0"]
   }
 
@@ -380,9 +375,9 @@ resource "aws_security_group" "rds_sg" {
 # RDS Subnet Group + MySQL
 ############################
 resource "aws_db_subnet_group" "rds_subnet_group" {
-  name        = "${var.project_name}-rds-subnet-group"
+  name       = "${var.project_name}-rds-subnet-group"
   subnet_ids = [aws_subnet.private_db_a.id, aws_subnet.private_db_b.id]
-  tags        = { Name = "${var.project_name}-rds-subnet-group" }
+  tags       = { Name = "${var.project_name}-rds-subnet-group" }
 }
 
 resource "aws_db_instance" "mysql" {
@@ -435,17 +430,17 @@ data "aws_iam_instance_profile" "lab_profile" {
 }
 
 ############################
-# ALB -> Target Group (8080) -> backend instances
+# ALB -> Target Group (8080)
 ############################
 resource "aws_lb" "alb" {
-  name                 = "${var.project_name}-alb"
+  name               = "${var.project_name}-alb"
   load_balancer_type = "application"
   security_groups    = [aws_security_group.alb_sg.id]
   subnets            = [aws_subnet.public_a.id, aws_subnet.public_b.id]
    
   ip_address_type    = "dualstack" 
    
-  tags                 = { Name = "${var.project_name}-alb" }
+  tags               = { Name = "${var.project_name}-alb" }
 }
 
 resource "aws_lb_target_group" "backend_tg" {
@@ -533,29 +528,29 @@ locals {
 }
 
 resource "aws_instance" "backend_1" {
-  ami                      = data.aws_ami.al2.id
-  instance_type            = "t3.small"
-  subnet_id                = aws_subnet.private_app_a.id
+  ami                    = data.aws_ami.al2.id
+  instance_type          = "t3.small"
+  subnet_id              = aws_subnet.private_app_a.id
   vpc_security_group_ids = [aws_security_group.backend_sg.id]
-  key_name                 = var.key_name
-  user_data                = local.backend_user_data
+  key_name               = var.key_name
+  user_data              = local.backend_user_data
 
-  iam_instance_profile     = data.aws_iam_instance_profile.lab_profile.name
+  iam_instance_profile   = data.aws_iam_instance_profile.lab_profile.name
    
-  tags                     = { Name = "backend-1" }
+  tags                   = { Name = "backend-1" }
 }
 
 resource "aws_instance" "backend_2" {
-  ami                      = data.aws_ami.al2.id
-  instance_type            = "t3.small"
-  subnet_id                = aws_subnet.private_app_b.id
+  ami                    = data.aws_ami.al2.id
+  instance_type          = "t3.small"
+  subnet_id              = aws_subnet.private_app_b.id
   vpc_security_group_ids = [aws_security_group.backend_sg.id]
-  key_name                 = var.key_name
-  user_data                = local.backend_user_data
+  key_name               = var.key_name
+  user_data              = local.backend_user_data
 
-  iam_instance_profile     = data.aws_iam_instance_profile.lab_profile.name
+  iam_instance_profile   = data.aws_iam_instance_profile.lab_profile.name
 
-  tags                     = { Name = "backend-2" }
+  tags                   = { Name = "backend-2" }
 }
 
 resource "aws_lb_target_group_attachment" "backend_1_attach" {
@@ -571,29 +566,48 @@ resource "aws_lb_target_group_attachment" "backend_2_attach" {
 }
 
 ############################
-# S3 (PRIVATE) + upload 
+# S3 + Cross-Platform Upload
 ############################
 resource "null_resource" "upload_frontend_and_config" {
+  # Trigger upload if dist folder content changes
   triggers = {
     dist_hash = sha1(join("", [
       for f in fileset(local.dist_dir, "**/*") : filesha1("${local.dist_dir}/${f}")
     ]))
   }
 
-  # MODIFIED: Uses PowerShell for Windows compatibility
+  # WINDOWS (PowerShell)
   provisioner "local-exec" {
     interpreter = ["PowerShell", "-Command"]
+    # Only runs if OS environment variable contains "Windows"
     command = <<-EOT
-      $dist = "${local.dist_dir}"
-      if (-not (Test-Path $dist)) {
-        Write-Output "dist folder not found. Skipping upload."
-        exit 0
+      if ($env:OS -like "*Windows*") {
+        $dist = "${local.dist_dir}"
+        if (-not (Test-Path $dist)) {
+          Write-Output "dist folder not found. Skipping upload."
+          exit 0
+        }
+        $json = '{ "apiBaseUrl": "/api" }'
+        Set-Content -Path "$dist/config.json" -Value $json
+        aws s3 sync "$dist" "s3://${var.site_bucket_name}/" --delete
       }
-      
-      $json = '{ "apiBaseUrl": "/api" }'
-      Set-Content -Path "$dist/config.json" -Value $json
-      
-      aws s3 sync "$dist" "s3://${var.site_bucket_name}/" --delete
+    EOT
+  }
+
+  # MAC/LINUX (Bash)
+  provisioner "local-exec" {
+    interpreter = ["/bin/bash", "-c"]
+    # Checks if 'uname' command exists (standard on Unix), ignores Windows
+    command = <<-EOT
+      if command -v uname &> /dev/null; then
+        DIST_DIR="${local.dist_dir}"
+        if [ ! -d "$DIST_DIR" ]; then
+          echo "dist folder not found. Skipping upload."
+          exit 0
+        fi
+        echo '{ "apiBaseUrl": "/api" }' > "$DIST_DIR/config.json"
+        aws s3 sync "$DIST_DIR" "s3://${var.site_bucket_name}/" --delete
+      fi
     EOT
   }
 }
@@ -618,10 +632,10 @@ resource "aws_cloudfront_distribution" "cdn" {
     null_resource.upload_frontend_and_config
   ]
 
-  enabled            = true
-  # MODIFIED: Enable IPv6
-  is_ipv6_enabled = true
-  comment            = "${var.project_name}-cdn"
+  enabled             = true
+  # IPv6 Enabled
+  is_ipv6_enabled     = true
+  comment             = "${var.project_name}-cdn"
 
   origin {
     domain_name              = "${var.site_bucket_name}.s3.${var.aws_region}.amazonaws.com"
@@ -771,7 +785,7 @@ resource "aws_s3_bucket_policy" "cloudtrail_policy" {
 }
 
 resource "aws_cloudtrail" "main" {
-  name             = "usis-trail"
+  name           = "usis-trail"
   s3_bucket_name = var.cloudtrail_bucket_name
 
   enable_log_file_validation    = true
