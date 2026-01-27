@@ -16,7 +16,7 @@ async function fetchBaseUrl(): Promise<string> {
         return cfg.apiBaseUrl;
     } catch (err) {
         console.error("Failed to load config.json", err);
-        return "http://localhost:8080/api"; // Fallback
+        return "http://localhost:8080/api"; 
     }
 }
 

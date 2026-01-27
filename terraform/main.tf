@@ -282,28 +282,125 @@ data "aws_ami" "al2" {
   }
 }
 
+
+############################
+# CloudFront: S3 (default) + ALB (/api/*)
+############################
+
+resource "aws_cloudfront_distribution" "cdn" {
+  depends_on = [aws_lb.alb]
+  enabled         = true
+  is_ipv6_enabled = false  # you said IPv4 first
+  comment         = "${var.project_name}-cdn"
+
+  # --- Origin 1: S3 Website endpoint (custom origin, NOT s3 origin) ---
+  origin {
+    domain_name = "${var.site_bucket_name}.s3-website-${var.aws_region}.amazonaws.com"
+    origin_id   = "s3-website"
+
+    custom_origin_config {
+      http_port              = 80
+      https_port             = 443
+      origin_protocol_policy = "http-only"   # http first
+      origin_ssl_protocols   = ["TLSv1.2"]
+    }
+  }
+
+  # --- Origin 2: ALB (custom origin) ---
+  origin {
+    domain_name = aws_lb.alb.dns_name
+    origin_id   = "alb-api"
+
+    custom_origin_config {
+      http_port              = 80
+      https_port             = 443
+      origin_protocol_policy = "http-only"   # http first
+      origin_ssl_protocols   = ["TLSv1.2"]
+    }
+  }
+
+  default_root_object = "index.html"
+
+  # Default behavior -> S3 (frontend)
+  default_cache_behavior {
+    target_origin_id       = "s3-website"
+    viewer_protocol_policy = "allow-all" # allow HTTP & HTTPS
+
+    allowed_methods  = ["GET", "HEAD"]
+    cached_methods   = ["GET", "HEAD"]
+    compress         = true
+
+    forwarded_values {
+      query_string = true
+      cookies {
+        forward = "none"
+      }
+    }
+  }
+
+  # /api/* behavior -> ALB (backend)
+  ordered_cache_behavior {
+    path_pattern           = "/api/*"
+    target_origin_id       = "alb-api"
+    viewer_protocol_policy = "allow-all"
+
+    allowed_methods = ["GET", "HEAD", "OPTIONS", "PUT", "POST", "PATCH", "DELETE"]
+    cached_methods  = ["GET", "HEAD"]
+    compress        = true
+
+    # Disable caching for APIs
+    min_ttl     = 0
+    default_ttl = 0
+    max_ttl     = 0
+
+    forwarded_values {
+      query_string = true
+      headers      = ["*"]   # simplest for now (auth headers, etc.)
+
+      cookies {
+        forward = "all"
+      }
+    }
+  }
+
+  # If SPA routes (React Router) -> send 404 to index.html
+  custom_error_response {
+    error_code         = 404
+    response_code      = 200
+    response_page_path = "/index.html"
+  }
+
+  restrictions {
+    geo_restriction {
+      restriction_type = "none"
+    }
+  }
+
+  viewer_certificate {
+    cloudfront_default_certificate = true
+  }
+}
+
 ############################
 # EC2: Bastion + Backend-1/2 (user_data bootstrap)
 ############################
 locals {
-  # For typical Spring Boot with MySQL
   jdbc_url = "jdbc:mysql://${aws_db_instance.mysql.address}:3306/${var.db_name}"
-  
+
   dist_dir = "${path.module}/../frontend/dist"
+
+  cloudfront_origin = "http://${aws_cloudfront_distribution.cdn.domain_name}"
 
   backend_user_data = <<-EOF
     #!/bin/bash
     set -euxo pipefail
 
     yum update -y
-
-    # Install Docker
     amazon-linux-extras install docker -y || yum install -y docker
     systemctl enable docker
     systemctl start docker
 
-    # Pull and run backend
-    docker pull ${var.backend_container_image} || true
+    docker pull ${var.backend_container_image}
     docker rm -f backend || true
 
     docker run -d --name backend \
@@ -311,9 +408,11 @@ locals {
       -e SPRING_DATASOURCE_URL='${local.jdbc_url}' \
       -e SPRING_DATASOURCE_USERNAME='${var.db_username}' \
       -e SPRING_DATASOURCE_PASSWORD='${var.db_password}' \
+      -e APP_CORS_ALLOWED_ORIGINS='${local.cloudfront_origin}' \
       ${var.backend_container_image}
   EOF
 }
+
 
 resource "aws_instance" "bastion" {
   ami                         = data.aws_ami.al2.id
@@ -402,11 +501,6 @@ resource "aws_lb_listener" "http" {
 # S3 Static Website + Runtime config.json (contains ALB URL)
 ############################
 
-############################
-# S3 Static Website + Runtime config.json (contains ALB URL)
-# WORKAROUND: Use local-exec to bypass AWS Provider S3 Object Lock checks
-############################
-
 resource "null_resource" "s3_website_setup" {
   # Make it rerun if bucket name changes
   triggers = {
@@ -450,31 +544,37 @@ resource "null_resource" "s3_website_setup" {
 
 resource "null_resource" "upload_frontend_and_config" {
   depends_on = [
-    aws_lb.alb,
+    aws_cloudfront_distribution.cdn,
     null_resource.s3_website_setup
   ]
 
-  # Re-run upload when ALB DNS changes (or dist changes if you change this trigger later)
   triggers = {
-    alb_dns = aws_lb.alb.dns_name
+    cf_domain = aws_cloudfront_distribution.cdn.domain_name
+    # Optional: force re-upload if you rebuild dist
+    dist_hash = sha1(join("", [
+      for f in fileset(local.dist_dir, "**/*") : filesha1("${local.dist_dir}/${f}")
+    ]))
   }
 
   provisioner "local-exec" {
     command = <<-EOT
-      set -e
+      set -euo pipefail
 
-      # Create config.json locally (runtime config)
+      # Create config.json (use SAME-ORIGIN API path)
       cat > "${path.module}/config.json" <<EOF
-      {
-        "apiBaseUrl": "http://${aws_lb.alb.dns_name}/api"
-      }
+{
+  "apiBaseUrl": "/api"
+}
 EOF
 
-      # Upload config.json to S3 root
       aws s3 cp "${path.module}/config.json" "s3://${var.site_bucket_name}/config.json" --content-type "application/json"
 
-      # Upload your dist folder (Vite) - assumes it exists
       aws s3 sync "${local.dist_dir}" "s3://${var.site_bucket_name}/" --delete
     EOT
   }
 }
+
+output "cloudfront_domain" {
+  value = aws_cloudfront_distribution.cdn.domain_name
+}
+

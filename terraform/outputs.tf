@@ -10,12 +10,11 @@ output "rds_endpoint" {
   value = aws_db_instance.mysql.address
 }
 
-# Since bucket is created manually (sandbox-safe)
 output "s3_bucket_name" {
   value = var.site_bucket_name
 }
 
-# Website endpoint (derived)
+# Website endpoint 
 output "s3_website_endpoint" {
   value = "http://${var.site_bucket_name}.s3-website-${var.aws_region}.amazonaws.com"
 }
