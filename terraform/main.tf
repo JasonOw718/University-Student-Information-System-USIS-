@@ -20,7 +20,7 @@ resource "aws_internet_gateway" "igw" {
 # Subnets (2 public + 4 private)
 ############################
 
-# Public (ALB + Bastion)
+# Public (ALB + NAT)
 resource "aws_subnet" "public_a" {
   vpc_id                          = aws_vpc.this.id
   cidr_block                      = "10.0.1.0/24"
@@ -305,10 +305,10 @@ resource "aws_security_group" "alb_sg" {
   vpc_id = aws_vpc.this.id
 
   ingress {
-    description      = "HTTP from CloudFront only"
-    from_port        = 80
-    to_port          = 80
-    protocol         = "tcp"
+    description     = "HTTP from CloudFront only"
+    from_port       = 80
+    to_port         = 80
+    protocol        = "tcp"
     # Managed Prefix List includes both IPv4 and IPv6 automatically
     prefix_list_ids = [data.aws_ec2_managed_prefix_list.cloudfront.id]
   }
@@ -326,49 +326,16 @@ resource "aws_security_group" "alb_sg" {
   tags = { Name = "${var.project_name}-alb-sg" }
 }
 
-resource "aws_security_group" "bastion_sg" {
-  name   = "${var.project_name}-bastion-sg"
-  vpc_id = aws_vpc.this.id
-
-  ingress {
-    description = "SSH to bastion"
-    from_port   = 22
-    to_port     = 22
-    protocol    = "tcp"
-    cidr_blocks = [var.allowed_ssh_cidr]
-  }
-
-  egress {
-    description      = "All egress"
-    from_port        = 0
-    to_port          = 0
-    protocol         = "-1"
-    cidr_blocks      = ["0.0.0.0/0"]
-    # MODIFIED: Allow IPv6 Egress
-    ipv6_cidr_blocks = ["::/0"]
-  }
-
-  tags = { Name = "${var.project_name}-bastion-sg" }
-}
-
 resource "aws_security_group" "backend_sg" {
   name   = "${var.project_name}-backend-sg"
   vpc_id = aws_vpc.this.id
 
   ingress {
-    description      = "8080 from ALB"
-    from_port        = 8080
-    to_port          = 8080
-    protocol         = "tcp"
+    description     = "8080 from ALB"
+    from_port       = 8080
+    to_port         = 8080
+    protocol        = "tcp"
     security_groups = [aws_security_group.alb_sg.id]
-  }
-
-  ingress {
-    description      = "SSH from bastion"
-    from_port        = 22
-    to_port          = 22
-    protocol         = "tcp"
-    security_groups = [aws_security_group.bastion_sg.id]
   }
 
   egress {
@@ -389,10 +356,10 @@ resource "aws_security_group" "rds_sg" {
   vpc_id = aws_vpc.this.id
 
   ingress {
-    description      = "MySQL from backend EC2 only"
-    from_port        = 3306
-    to_port          = 3306
-    protocol         = "tcp"
+    description     = "MySQL from backend EC2 only"
+    from_port       = 3306
+    to_port         = 3306
+    protocol        = "tcp"
     security_groups = [aws_security_group.backend_sg.id]
   }
 
@@ -446,7 +413,7 @@ resource "aws_db_instance" "mysql" {
 resource "aws_db_snapshot" "mysql_snapshot" {
   db_instance_identifier = aws_db_instance.mysql.identifier
   db_snapshot_identifier = "${var.project_name}-rds-snapshot"
-  
+   
   tags = { Name = "${var.project_name}-rds-snapshot" }
 }
 
@@ -537,7 +504,7 @@ resource "random_password" "alb_secret" {
 }
 
 ############################
-# EC2: Bastion + Backend-1/2
+# EC2: Backend-1/2
 ############################
 locals {
   jdbc_url = "jdbc:mysql://${aws_db_instance.mysql.address}:3306/${var.db_name}"
@@ -565,41 +532,30 @@ locals {
   EOF
 }
 
-resource "aws_instance" "bastion" {
-  ami                           = data.aws_ami.al2.id
-  instance_type                 = "t3.small"
-  subnet_id                     = aws_subnet.public_a.id
-  vpc_security_group_ids        = [aws_security_group.bastion_sg.id]
-  key_name                      = var.key_name
-  associate_public_ip_address = true
-  # IPv6 is now auto-assigned by subnet config
-  tags                          = { Name = "${var.project_name}-bastion" }
-}
-
 resource "aws_instance" "backend_1" {
-  ami                    = data.aws_ami.al2.id
-  instance_type          = "t3.small"
-  subnet_id              = aws_subnet.private_app_a.id
+  ami                      = data.aws_ami.al2.id
+  instance_type            = "t3.small"
+  subnet_id                = aws_subnet.private_app_a.id
   vpc_security_group_ids = [aws_security_group.backend_sg.id]
-  key_name               = var.key_name
-  user_data              = local.backend_user_data
+  key_name                 = var.key_name
+  user_data                = local.backend_user_data
 
-  iam_instance_profile   = data.aws_iam_instance_profile.lab_profile.name
-  
-  tags                   = { Name = "backend-1" }
+  iam_instance_profile     = data.aws_iam_instance_profile.lab_profile.name
+   
+  tags                     = { Name = "backend-1" }
 }
 
 resource "aws_instance" "backend_2" {
-  ami                    = data.aws_ami.al2.id
-  instance_type          = "t3.small"
-  subnet_id              = aws_subnet.private_app_b.id
+  ami                      = data.aws_ami.al2.id
+  instance_type            = "t3.small"
+  subnet_id                = aws_subnet.private_app_b.id
   vpc_security_group_ids = [aws_security_group.backend_sg.id]
-  key_name               = var.key_name
-  user_data              = local.backend_user_data
+  key_name                 = var.key_name
+  user_data                = local.backend_user_data
 
-  iam_instance_profile   = data.aws_iam_instance_profile.lab_profile.name
+  iam_instance_profile     = data.aws_iam_instance_profile.lab_profile.name
 
-  tags                   = { Name = "backend-2" }
+  tags                     = { Name = "backend-2" }
 }
 
 resource "aws_lb_target_group_attachment" "backend_1_attach" {
@@ -615,7 +571,7 @@ resource "aws_lb_target_group_attachment" "backend_2_attach" {
 }
 
 ############################
-# S3 (PRIVATE) + upload
+# S3 (PRIVATE) + upload 
 ############################
 resource "null_resource" "upload_frontend_and_config" {
   triggers = {
@@ -624,16 +580,20 @@ resource "null_resource" "upload_frontend_and_config" {
     ]))
   }
 
+  # MODIFIED: Uses PowerShell for Windows compatibility
   provisioner "local-exec" {
+    interpreter = ["PowerShell", "-Command"]
     command = <<-EOT
-      set -euo pipefail
-      test -d "${local.dist_dir}" || (echo "dist not found. Skipping upload." && exit 0)
-      cat > "${local.dist_dir}/config.json" <<EOF
-{
-  "apiBaseUrl": "/api"
-}
-EOF
-      aws s3 sync "${local.dist_dir}" "s3://${var.site_bucket_name}/" --delete
+      $dist = "${local.dist_dir}"
+      if (-not (Test-Path $dist)) {
+        Write-Output "dist folder not found. Skipping upload."
+        exit 0
+      }
+      
+      $json = '{ "apiBaseUrl": "/api" }'
+      Set-Content -Path "$dist/config.json" -Value $json
+      
+      aws s3 sync "$dist" "s3://${var.site_bucket_name}/" --delete
     EOT
   }
 }
@@ -658,10 +618,10 @@ resource "aws_cloudfront_distribution" "cdn" {
     null_resource.upload_frontend_and_config
   ]
 
-  enabled           = true
+  enabled            = true
   # MODIFIED: Enable IPv6
   is_ipv6_enabled = true
-  comment           = "${var.project_name}-cdn"
+  comment            = "${var.project_name}-cdn"
 
   origin {
     domain_name              = "${var.site_bucket_name}.s3.${var.aws_region}.amazonaws.com"
