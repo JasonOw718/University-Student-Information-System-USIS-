@@ -1,35 +1,49 @@
-import axios from 'axios';
+import axios, { type AxiosInstance, type InternalAxiosRequestConfig } from 'axios';
 
-const api = axios.create({
-    baseURL: 'http://localhost:8080/api', // Best practice: use import.meta.env.VITE_API_URL but hardcoding for now as per plan
-    headers: {
-        'Content-Type': 'application/json',
-    },
+const api: AxiosInstance = axios.create({
+    baseURL: '', 
+    headers: { "Content-Type": "application/json" },
 });
 
-// Request interceptor to add token
+let configPromise: Promise<string> | null = null;
+
+// Function to fetch the config once
+async function fetchBaseUrl(): Promise<string> {
+    try {
+        const res = await fetch("/config.json");
+        const cfg = await res.json();
+        api.defaults.baseURL = cfg.apiBaseUrl;
+        return cfg.apiBaseUrl;
+    } catch (err) {
+        console.error("Failed to load config.json", err);
+        return "http://localhost:8080/api"; // Fallback
+    }
+}
+
 api.interceptors.request.use(
-    (config) => {
-        const token = localStorage.getItem('token');
+    async (config: InternalAxiosRequestConfig) => {
+        if (!configPromise) {
+            configPromise = fetchBaseUrl();
+        }
+        
+        const baseUrl = await configPromise;
+        config.baseURL = baseUrl;
+
+        const token = localStorage.getItem("token");
         if (token) {
             config.headers.Authorization = `Bearer ${token}`;
         }
+        
         return config;
     },
-    (error) => {
-        return Promise.reject(error);
-    }
+    (error) => Promise.reject(error)
 );
 
-// Response interceptor for error handling
 api.interceptors.response.use(
     (response) => response,
     (error) => {
-        if (error.response && error.response.status === 401) {
-            // Clear token and redirect to login if unauthorized
-            // Note: Direct navigation outside component is tricky, so we rely on App routing to check auth or handle it in components
+        if (error.response?.status === 401) {
             localStorage.removeItem('token');
-            // optionally window.location.href = '/auth';
         }
         return Promise.reject(error);
     }

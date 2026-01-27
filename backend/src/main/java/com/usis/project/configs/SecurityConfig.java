@@ -40,7 +40,7 @@ public class SecurityConfig {
                 .cors(Customizer.withDefaults())
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers("/api/auth/**", "/api/health").permitAll()
                         // Admin endpoints -> LECTURER only
                         .requestMatchers("/api/admin/**").hasRole("LECTURER")
                         // CGPA endpoint can be accessed by both
