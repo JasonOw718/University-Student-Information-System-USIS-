@@ -568,46 +568,52 @@ resource "aws_lb_target_group_attachment" "backend_2_attach" {
 ############################
 # S3 + Cross-Platform Upload
 ############################
-resource "null_resource" "upload_frontend_and_config" {
-  # Trigger upload if dist folder content changes
+
+# WINDOWS RESOURCE (Only runs if host_os is 'windows')
+resource "null_resource" "upload_frontend_windows" {
+  count = var.host_os == "windows" ? 1 : 0
+
   triggers = {
     dist_hash = sha1(join("", [
       for f in fileset(local.dist_dir, "**/*") : filesha1("${local.dist_dir}/${f}")
     ]))
   }
 
-  # WINDOWS (PowerShell)
   provisioner "local-exec" {
     interpreter = ["PowerShell", "-Command"]
-    # Only runs if OS environment variable contains "Windows"
     command = <<-EOT
-      if ($env:OS -like "*Windows*") {
-        $dist = "${local.dist_dir}"
-        if (-not (Test-Path $dist)) {
-          Write-Output "dist folder not found. Skipping upload."
-          exit 0
-        }
-        $json = '{ "apiBaseUrl": "/api" }'
-        Set-Content -Path "$dist/config.json" -Value $json
-        aws s3 sync "$dist" "s3://${var.site_bucket_name}/" --delete
+      $dist = "${local.dist_dir}"
+      if (-not (Test-Path $dist)) {
+        Write-Output "dist folder not found. Skipping upload."
+        exit 0
       }
+      $json = '{ "apiBaseUrl": "/api" }'
+      Set-Content -Path "$dist/config.json" -Value $json
+      aws s3 sync "$dist" "s3://${var.site_bucket_name}/" --delete
     EOT
   }
+}
 
-  # MAC/LINUX (Bash)
+# MAC/LINUX RESOURCE (Only runs if host_os is 'unix')
+resource "null_resource" "upload_frontend_unix" {
+  count = var.host_os == "unix" ? 1 : 0
+
+  triggers = {
+    dist_hash = sha1(join("", [
+      for f in fileset(local.dist_dir, "**/*") : filesha1("${local.dist_dir}/${f}")
+    ]))
+  }
+
   provisioner "local-exec" {
     interpreter = ["/bin/bash", "-c"]
-    # Checks if 'uname' command exists (standard on Unix), ignores Windows
     command = <<-EOT
-      if command -v uname &> /dev/null; then
-        DIST_DIR="${local.dist_dir}"
-        if [ ! -d "$DIST_DIR" ]; then
-          echo "dist folder not found. Skipping upload."
-          exit 0
-        fi
-        echo '{ "apiBaseUrl": "/api" }' > "$DIST_DIR/config.json"
-        aws s3 sync "$DIST_DIR" "s3://${var.site_bucket_name}/" --delete
+      DIST_DIR="${local.dist_dir}"
+      if [ ! -d "$DIST_DIR" ]; then
+        echo "dist folder not found. Skipping upload."
+        exit 0
       fi
+      echo '{ "apiBaseUrl": "/api" }' > "$DIST_DIR/config.json"
+      aws s3 sync "$DIST_DIR" "s3://${var.site_bucket_name}/" --delete
     EOT
   }
 }
@@ -629,7 +635,8 @@ resource "aws_cloudfront_origin_access_control" "oac" {
 resource "aws_cloudfront_distribution" "cdn" {
   depends_on = [
     aws_lb.alb,
-    null_resource.upload_frontend_and_config
+    null_resource.upload_frontend_windows,
+    null_resource.upload_frontend_unix
   ]
 
   enabled             = true

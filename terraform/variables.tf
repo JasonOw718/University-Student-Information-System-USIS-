@@ -8,11 +8,6 @@ variable "aws_region" {
   default = "us-east-1"
 }
 
-variable "allowed_ssh_cidr" {
-  type        = string
-  description = "Your public IP CIDR for SSH to bastion, e.g. 1.2.3.4/32"
-}
-
 variable "key_name" {
   type        = string
   description = "EC2 keypair name in AWS (lab keypair name)"
@@ -51,4 +46,15 @@ variable "backend_health_path" {
 variable "cloudtrail_bucket_name" {
   type        = string
   description = "Name of the MANUALLY created S3 bucket for CloudTrail logs"
+}
+
+variable "host_os" {
+  type        = string
+  description = "The OS of the machine running Terraform (windows or unix)"
+  default     = "unix" 
+  
+  validation {
+    condition     = contains(["windows", "unix"], var.host_os)
+    error_message = "Var host_os must be either 'windows' or 'unix'."
+  }
 }
