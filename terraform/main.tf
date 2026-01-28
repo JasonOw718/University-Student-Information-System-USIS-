@@ -568,7 +568,7 @@ locals {
 resource "aws_instance" "bastion" {
   ami                           = data.aws_ami.al2.id
   instance_type                 = "t3.small"
-  subnet_id                     = aws_subnet.public_a.id
+  subnet_id                     = aws_subnet.public_b.id
   vpc_security_group_ids        = [aws_security_group.bastion_sg.id]
   key_name                      = var.key_name
   associate_public_ip_address = true
