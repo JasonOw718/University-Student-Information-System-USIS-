@@ -546,13 +546,19 @@ locals {
   backend_user_data = <<-EOF
     #!/bin/bash
     set -euxo pipefail
+    
+    sleep 30
 
     yum update -y
-    amazon-linux-extras install docker -y || yum install -y docker
+    amazon-linux-extras install docker -y
+    yum clean metadata
+    yum install -y docker
+
     systemctl enable docker
     systemctl start docker
+    
+    usermod -aG docker ec2-user
 
-    # Pull & run backend
     docker pull ${var.backend_container_image}
     docker rm -f backend || true
 
@@ -582,7 +588,7 @@ resource "aws_instance" "backend_1" {
   subnet_id              = aws_subnet.private_app_a.id
   vpc_security_group_ids = [aws_security_group.backend_sg.id]
   key_name               = var.key_name
-  user_data              = local.backend_user_data
+  user_data_base64 = base64encode(local.backend_user_data)
 
   iam_instance_profile   = data.aws_iam_instance_profile.lab_profile.name
   
@@ -595,7 +601,7 @@ resource "aws_instance" "backend_2" {
   subnet_id              = aws_subnet.private_app_b.id
   vpc_security_group_ids = [aws_security_group.backend_sg.id]
   key_name               = var.key_name
-  user_data              = local.backend_user_data
+  user_data_base64 = base64encode(local.backend_user_data)
 
   iam_instance_profile   = data.aws_iam_instance_profile.lab_profile.name
 
